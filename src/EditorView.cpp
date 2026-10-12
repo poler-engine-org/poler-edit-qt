@@ -11,11 +11,18 @@
 #include <QScrollBar>
 #include <QtMath>
 
+#include <algorithm>
+
 static constexpr int kOverscan = 40;      // строк сверх видимого окна
 static constexpr int kBlinkMs = 530;
 static constexpr int kGutterPad = 12;
 // Пока line-index не готов, высота скроллбара оценивается по плотности строк.
 static constexpr double kEstBytesPerLine = 96.0;
+// Debounce повторного поиска после правок (мс).
+static constexpr int kResearchMs = 400;
+// Подсветка совпадений Search Engine v2.
+static constexpr int kHitAlpha = 70;
+static constexpr int kHitCurAlpha = 170;
 
 EditorView::EditorView(EngineBridge *bridge, const QString &path, QWidget *parent)
     : QAbstractScrollArea(parent)
@@ -40,6 +47,13 @@ EditorView::EditorView(EngineBridge *bridge, const QString &path, QWidget *paren
     m_blink.start();
 
     connect(m_bridge, &EngineBridge::progressEvent, this, &EditorView::onProgress);
+    connect(m_bridge, &EngineBridge::searchEvent, this, &EditorView::onSearchEvent);
+
+    // Повторный live-поиск после правок: байтовые сдвиги делают выдачу
+    // устаревшей — перезапускаем сессию (debounce).
+    m_research.setSingleShot(true);
+    m_research.setInterval(kResearchMs);
+    connect(&m_research, &QTimer::timeout, this, &EditorView::reRunSearchAfterEdit);
 
     // Скроллбары: коннект ОДИН раз (UniqueConnection не работает с лямбдами).
     connect(verticalScrollBar(), &QScrollBar::valueChanged, this, [this](int) {
@@ -281,6 +295,32 @@ void EditorView::paintEvent(QPaintEvent *)
         if (lineNo == m_cursor.line) {
             p.fillRect(gw, y, w - gw, lh, curLineBg);
         }
+        // подсветка совпадений Search Engine v2 (полупрозрачный янтарь;
+        // текущее совпадение — плотнее, с рамкой). Рисуем ПОД текст.
+        if (!m_hits.isEmpty() && !text.isEmpty()) {
+            sortHitsIfDirty();
+            // hits отсортированы по байту → по строкам тоже монотонно:
+            // старт с нижней грани и линейный проход видимых строк.
+            auto it = std::lower_bound(m_hits.begin(), m_hits.end(), lineNo,
+                                       [](const PolarHit &h, qlonglong l) { return h.line < l; });
+            for (; it != m_hits.end() && it->line == lineNo; ++it) {
+                const int idx = int(it - m_hits.begin());
+                const bool cur = (idx == m_hitIndex);
+                const int hx = gw + int(it->col) * cw - hscroll;
+                const int hw = qMax(1, int(it->lenChars)) * cw;
+                if (hx + hw > gw) {
+                    QColor amber(255, 190, 0, cur ? kHitCurAlpha : kHitAlpha);
+                    p.fillRect(qMax(hx, gw), y + 1,
+                               qMin(qMax(hx, gw) + hw, w) - qMax(hx, gw), lh - 2, amber);
+                    if (cur) {
+                        p.setPen(QPen(QColor(255, 210, 60, 220), 1));
+                        p.drawRect(qMax(hx, gw) + 1, y + 2,
+                                   qMin(qMax(hx, gw) + hw, w) - qMax(hx, gw) - 2, lh - 4);
+                        p.setPen(fg);
+                    }
+                }
+            }
+        }
         // выделение
         if (hasSelection() && lineNo >= selStart.line && lineNo <= selEnd.line) {
             int fromCol = 0;
@@ -426,6 +466,10 @@ void EditorView::afterEdit()
 {
     requestFetch(m_cursor.line);
     viewport()->update();
+    // Живой поиск: байтовые сдвиги устаранили выдачу — перезапуск (debounce).
+    if (searchActive()) {
+        m_research.start();
+    }
 }
 
 void EditorView::deleteSelection()
@@ -564,6 +608,14 @@ void EditorView::keyPressEvent(QKeyEvent *e)
     }
 
     switch (e->key()) {
+    case Qt::Key_F3:
+        // Search v2: навигация по совпадениям (Shift+F3 — назад).
+        if (shift) {
+            prevHit();
+        } else {
+            nextHit();
+        }
+        return;
     case Qt::Key_Up:
         setCursor(Pos{m_cursor.line - 1, m_cursor.col}, !shift);
         return;
@@ -810,38 +862,192 @@ void EditorView::zoomOut()
     requestFetch(topLine());
 }
 
-// ---------------- поиск ----------------
+// ---------------- поиск (Search Engine v2, live) ----------------
 
-void EditorView::search(const QString &query, bool caseSensitive)
+void EditorView::searchLive(const QString &query, bool caseSensitive)
 {
-    if (m_doc == 0 || query.isEmpty()) {
+    if (m_doc == 0) {
         return;
     }
-    m_lastQuery = query;
-    emit statusMessage(tr("Пошук «%1»…").arg(query), 0);
-    m_bridge->search(m_doc, query, caseSensitive, 5000, [this, query](const QJsonObject &r) {
+    if (query.isEmpty()) {
+        clearSearch();
+        return;
+    }
+    m_lastLiveQuery = query;
+    m_searchCaseSensitive = caseSensitive;
+    // Выдача старой сессии остаётся на экране до первого события новой —
+    // подсветка не мигает. Ядро само отменяет прошлую сессию этого doc.
+    m_searchFence = true;
+    m_searchActive = true;
+    m_searchDone = false;
+    m_searchTrunc = false;
+    m_searchJumped = false;
+    emit hitCountChanged(m_hits.size(), m_hits.isEmpty() ? 0 : m_hitIndex,
+                         true, false);
+    m_bridge->searchLive(m_doc, query, caseSensitive, 5000,
+                         topLine(), topLine() + visibleLines() + 1,
+                         [this](const QJsonObject &r) {
         if (!r.value("ok").toBool()) {
-            emit statusMessage(tr("Помилка пошуку: %1").arg(r.value("error").toString()), 5000);
+            emit statusMessage(tr("Помилка пошуку: %1")
+                                   .arg(r.value("error").toString()), 5000);
+            m_searchFence = false;
             return;
         }
-        m_hits.clear();
-        const QJsonArray arr = r.value("hits").toArray();
-        for (const QJsonValue &v : arr) {
-            const QJsonObject h = v.toObject();
-            PolarHit hit;
-            hit.line = h.value("line").toVariant().toLongLong();
-            hit.col = h.value("col").toVariant().toLongLong();
-            hit.len = h.value("len").toVariant().toLongLong();
-            hit.byte = h.value("byte").toVariant().toLongLong();
-            m_hits.append(hit);
-        }
-        m_hitIndex = 0;
-        if (m_hits.isEmpty()) {
-            emit statusMessage(tr("«%1»: збігів немає").arg(query), 4000);
-        } else {
-            jumpToHit(0);
-        }
+        adoptSession(r.value("sid").toVariant().toLongLong());
     });
+}
+
+/// Снять fence для новой сессии (sid строго растёт в ядре). Вызывается из
+/// ack ИЛИ из первого события — кто придёт первым по единой трубе stdio.
+void EditorView::adoptSession(qlonglong sid)
+{
+    if (!m_searchFence || sid <= m_searchSid) {
+        return; // ack опоздал: событие новой сессии уже принято (или старьё)
+    }
+    m_searchSid = sid;
+    m_searchFence = false;
+    // Сброс выдачи прошлой сессии — начинается заполнение заново.
+    m_hits.clear();
+    m_hitsDirty = false;
+    m_hitIndex = 0;
+    m_curHitByte = -1;
+    viewport()->update();
+}
+
+void EditorView::clearSearch()
+{
+    m_searchActive = false;
+    m_searchFence = false;
+    m_searchSid = 0;
+    m_lastLiveQuery.clear();
+    m_hits.clear();
+    m_hitsDirty = false;
+    m_hitIndex = 0;
+    m_curHitByte = -1;
+    m_searchDone = false;
+    m_searchTrunc = false;
+    m_searchJumped = false;
+    m_searchR = 0.0;
+    m_searchGbps = 0.0;
+    viewport()->update();
+    emit hitCountChanged(0, 0, false, false);
+}
+
+void EditorView::applyHitsArray(const QJsonArray &arr)
+{
+    if (arr.isEmpty()) {
+        return;
+    }
+    for (const QJsonValue &v : arr) {
+        const QJsonObject h = v.toObject();
+        PolarHit hit;
+        hit.line = h.value("line").toVariant().toLongLong();
+        hit.col = h.value("col").toVariant().toLongLong(); // СИМВОЛЫ
+        hit.len = h.value("len").toVariant().toLongLong();
+        hit.lenChars = h.value("len_chars").toVariant().toLongLong();
+        hit.byte = h.value("byte").toVariant().toLongLong();
+        hit.eps = h.value("eps").toDouble();
+        m_hits.append(hit);
+    }
+    m_hitsDirty = true;
+}
+
+void EditorView::sortHitsIfDirty()
+{
+    if (!m_hitsDirty) {
+        return;
+    }
+    const qlonglong anchor = m_curHitByte;
+    std::stable_sort(m_hits.begin(), m_hits.end(),
+                     [](const PolarHit &a, const PolarHit &b) { return a.byte < b.byte; });
+    m_hitsDirty = false;
+    if (anchor >= 0) {
+        // Текущее совпадение пережило пересортировку — сохраняем индекс.
+        for (int i = 0; i < m_hits.size(); ++i) {
+            if (m_hits.at(i).byte == anchor) {
+                m_hitIndex = i;
+                break;
+            }
+        }
+    }
+}
+
+void EditorView::onSearchEvent(const QJsonObject &obj)
+{
+    if (!m_searchActive) {
+        return; // после clearSearch — игнорируем хвосты отменённой сессии
+    }
+    const qlonglong sid = obj.value("sid").toVariant().toLongLong();
+    if (sid == 0) {
+        return;
+    }
+    if (m_searchFence) {
+        // Ждём НОВУЮ сессию: старые события (sid <= m_searchSid) — мусор.
+        if (sid <= m_searchSid) {
+            return;
+        }
+        adoptSession(sid);
+    } else if (sid != m_searchSid) {
+        return; // опоздавшие события прошлой сессии
+    }
+
+    const QString ev = obj.value("ev").toString();
+    if (ev == QLatin1String("hits")) {
+        applyHitsArray(obj.value("hits").toArray());
+        // Первое окно вьюпорта: мгновенный авто-переход к ближайшему
+        // совпадению — курсор оказывается на подсветке за миллисекунды.
+        const QString phase = obj.value("phase").toString();
+        if (!m_searchJumped && phase == QLatin1String("viewport") && !m_hits.isEmpty()) {
+            m_searchJumped = true;
+            sortHitsIfDirty();
+            int best = 0;
+            qlonglong bestDist = -1;
+            for (int i = 0; i < m_hits.size(); ++i) {
+                const qlonglong d = qAbs(m_hits.at(i).line - m_cursor.line);
+                if (bestDist < 0 || d < bestDist) {
+                    bestDist = d;
+                    best = i;
+                }
+            }
+            jumpToHit(best);
+        }
+        viewport()->update();
+        emit hitCountChanged(m_hits.size(), m_hitIndex, !m_searchDone, m_searchTrunc);
+    } else if (ev == QLatin1String("viewport_done")) {
+        // Фаза A завершена: первые совпадения уже на экране.
+    } else if (ev == QLatin1String("search_done")) {
+        if (obj.value("cancelled").toBool()) {
+            return; // отменена более новой сессией — её событие приедет своим sid
+        }
+        m_searchDone = true;
+        m_searchTrunc = obj.value("truncated").toBool();
+        m_searchR = obj.value("R").toDouble();
+        m_searchGbps = obj.value("gbps").toDouble();
+        sortHitsIfDirty();
+        viewport()->update();
+        emit hitCountChanged(m_hits.size(), m_hitIndex, false, m_searchTrunc);
+        if (m_hits.isEmpty()) {
+            emit statusMessage(tr("«%1»: збігів немає").arg(m_lastLiveQuery), 4000);
+        } else {
+            emit statusMessage(tr("«%1»: %2 збігів · ε-резонанс R=%3 · %4 ГБ/с%5")
+                                   .arg(m_lastLiveQuery)
+                                   .arg(m_hits.size())
+                                   .arg(m_searchR, 0, 'f', 1)
+                                   .arg(m_searchGbps, 0, 'f', 1)
+                                   .arg(m_searchTrunc ? tr(" · ліміт, показано перші 5000") : QString()),
+                               6000);
+        }
+    }
+}
+
+void EditorView::reRunSearchAfterEdit()
+{
+    if (m_doc == 0 || m_lastLiveQuery.isEmpty()) {
+        return;
+    }
+    // Байтовые сдвиги после правок делают выдачу устаревшей: перезапуск
+    // сессии с текущим окном вьюпорта (подсветка мигнёт один раз).
+    searchLive(m_lastLiveQuery, m_searchCaseSensitive);
 }
 
 void EditorView::jumpToHit(int index)
@@ -849,12 +1055,15 @@ void EditorView::jumpToHit(int index)
     if (m_hits.isEmpty()) {
         return;
     }
+    sortHitsIfDirty();
     m_hitIndex = ((index % m_hits.size()) + m_hits.size()) % m_hits.size();
+    m_curHitByte = m_hits.at(m_hitIndex).byte;
     const PolarHit &h = m_hits.at(m_hitIndex);
     setTopLine(qMax<qlonglong>(h.line - visibleLines() / 2, 0));
     requestFetch(h.line);
     setCursor(Pos{h.line, h.col});
-    emit statusMessage(tr("Збіг %1 / %2").arg(m_hitIndex + 1).arg(m_hits.size()), 3000);
+    viewport()->update();
+    emit hitCountChanged(m_hits.size(), m_hitIndex, !m_searchDone, m_searchTrunc);
 }
 
 void EditorView::nextHit()
@@ -863,6 +1072,14 @@ void EditorView::nextHit()
         return;
     }
     jumpToHit(m_hitIndex + 1);
+}
+
+void EditorView::prevHit()
+{
+    if (m_hits.isEmpty()) {
+        return;
+    }
+    jumpToHit(m_hitIndex - 1);
 }
 
 void EditorView::gotoLine(qlonglong line)

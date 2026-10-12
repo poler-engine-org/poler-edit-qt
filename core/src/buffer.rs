@@ -4,12 +4,15 @@
 //! * Оригинал файла отображается через mmap и НИКОГДА не копируется в кучу.
 //!   Он нарезается на куски-дескрипторы `MAX_PIECE_BYTES` (чистые метаданные,
 //!   создание O(file/16MB) без единого чтения данных).
-//! * Правки дописываются в append-only буферы (`edit_bufs`) и ссылаются
-//!   кусками `Src::Edit`. Исходные байты неизменяемы — классическая piece
-//!   table, но с нарезкой оригинала для ленивой адресации строк.
+//! * Правки дописываются в append-only буферы (`edit_bufs`, чанки ≤1 МиB,
+//!   immutable после расшаривания) и ссылаются кусками `Src::Edit`.
+//!   Исходные байты неизменяемы — классическая piece table, но с нарезкой
+//!   оригинала для ленивой адресации строк.
 //! * Ленивый SIMD line-index: число `\n` кускa считается при первом
 //!   касании (memchr, ~ГБ/с) и кэшируется в самом куске. Префикс
 //!   `piece_line_start` достраивается по требованию (вьюпорт, goto, поиск).
+//! * `snapshot()` — изолируемый срез для фоновых сканеров (Search Engine v2):
+//!   Arc-ссылки на байты + клон метаданы; правки не рвут снапшот.
 //!
 //! Инварианты:
 //! * `cum[i]` — сумма длин кусков 0..=i (байтовый конец куска i).
@@ -23,11 +26,17 @@ use std::fs::{self, File};
 use std::io::{self, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 /// Максимальный кусок оригинала: нарезка чистой метадаты, ленивый подсчёт
 /// строк никогда не сканирует больше этого за один шаг отклика.
 pub const MAX_PIECE_BYTES: u64 = 16 << 20;
+
+/// Потолок одного буфера правок. Куски edit-буферов append-only и после
+/// расшаривания (снапшотом фонового поиска) НЕ мутируются никогда — ссылки
+/// сканера валидны при любых последующих правках (см. `append_edit`).
+const EDIT_CHUNK_CAP: usize = 1 << 20;
 
 /// Строки длиннее этого усекаются во вьюпорте (защита рендера, как Kate).
 pub const VIEWPORT_MAX_LINE_BYTES: usize = 8192;
@@ -84,8 +93,17 @@ pub struct SearchHit {
     pub byte: u64,
     pub len: usize,
     pub line: u64,
-    /// Столбец в байтах от начала строки.
+    /// Столбец в СИМВОЛАХ от начала строки (v2: раньше был байтовым —
+    /// GUI использовал его как символьную позицию курсора, на кириллице
+    /// курсор улетал вдвое дальше совпадения).
     pub col: u64,
+    /// Столбец в байтах от начала строки.
+    pub col_bytes: u64,
+    /// Длина совпадения в СИМВОЛАХ (для подсветки в GUI).
+    pub len_chars: u64,
+    /// ε (энергия значимости) — локальный порт calculate_epsilon
+    /// из poler-engine (см. search.rs).
+    pub eps: f64,
 }
 
 #[derive(Clone, Debug)]
@@ -105,8 +123,8 @@ struct Snapshot {
 
 pub struct PolerBuffer {
     path: PathBuf,
-    mmap: Option<Mmap>,
-    edit_bufs: Vec<Vec<u8>>,
+    mmap: Option<Arc<Mmap>>,
+    edit_bufs: Vec<Arc<Vec<u8>>>,
     pieces: Vec<Piece>,
     cum: Vec<u64>,
     piece_line_start: Vec<u64>,
@@ -140,7 +158,7 @@ impl PolerBuffer {
         let (mmap, pieces) = if len == 0 {
             (None, Vec::new())
         } else {
-            let mmap = unsafe { Mmap::map(&file)? };
+            let mmap = Arc::new(unsafe { Mmap::map(&file)? });
             // Интерактивный доступ случайными окнами: без агрессивного
             // read-ahead ядра. Сканы (поиск/индекс) сами советуют WILLNEED.
             #[cfg(unix)]
@@ -732,14 +750,33 @@ impl PolerBuffer {
     }
 
     /// Дописать байты в append-only буфер правок, вернуть (buf, start).
+    ///
+    /// Инвариант изоляции поиска (Search Engine v2): кусок редактируется
+    /// ТОЛЬКО при эксклюзивном владении (снапшоты фонового сканера его
+    /// расшарили — пишем в НОВЫЙ кусок, ≤1 МиБ накладных на серию правок
+    /// во время активного поиска). Старые куски immutable — ссылки уже
+    /// отданных снапшотов не рвутся никогда.
     fn append_edit(&mut self, bytes: &[u8]) -> (u32, u64) {
-        if self.edit_bufs.is_empty() {
-            self.edit_bufs.push(Vec::with_capacity(64 << 10));
+        debug_assert!(!bytes.is_empty());
+        if bytes.len() >= EDIT_CHUNK_CAP {
+            let idx = self.edit_bufs.len() as u32;
+            self.edit_bufs.push(Arc::new(bytes.to_vec()));
+            return (idx, 0);
         }
-        let idx = self.edit_bufs.len() - 1;
-        let start = self.edit_bufs[idx].len() as u64;
-        self.edit_bufs[idx].extend_from_slice(bytes);
-        (idx as u32, start)
+        if let Some(last) = self.edit_bufs.last_mut() {
+            if Arc::strong_count(last) == 1 {
+                if let Some(v) = Arc::get_mut(last) {
+                    if v.len() + bytes.len() <= EDIT_CHUNK_CAP {
+                        let start = v.len() as u64;
+                        v.extend_from_slice(bytes);
+                        return ((self.edit_bufs.len() - 1) as u32, start);
+                    }
+                }
+            }
+        }
+        let idx = self.edit_bufs.len() as u32;
+        self.edit_bufs.push(Arc::new(bytes.to_vec()));
+        (idx, 0)
     }
 
     /// Вставка текста по байтовому смещению (границы символа выравниваются).
@@ -842,9 +879,10 @@ impl PolerBuffer {
 
     // ---------------- поиск ----------------
 
-    /// SIMD-поиск подстроки по всему документу прямо поверх кусков.
-    /// Совпадения через границы кусков (в т.ч. правок) находятся корректно:
-    /// скан каждого куска идёт с перекрытием (carry) от предыдущего.
+    /// SIMD-поиск подстроки по всему документу (синхронный режим, без
+    /// событий). Делегирует Search Engine v2 (`search::run_once`):
+    /// многопоточный скан поверх снапшота piece-table, совпадения через
+    /// границы кусков/правок, ε-плотность, колонки в символах и байтах.
     pub fn search(
         &mut self,
         needle: &str,
@@ -853,145 +891,152 @@ impl PolerBuffer {
         cancel: &AtomicBool,
     ) -> io::Result<SearchStats> {
         let started = Instant::now();
-        let mut out = SearchStats {
-            hits: Vec::new(),
-            truncated: false,
-            cancelled: false,
-            scanned_bytes: 0,
-            elapsed: Duration::ZERO,
-        };
-        if needle.is_empty() || self.pieces.is_empty() {
-            out.elapsed = started.elapsed();
-            return Ok(out);
-        }
-        let mut pats: Vec<String> = Vec::new();
-        if case_sensitive || needle.is_ascii() {
-            pats.push(needle.to_string());
-        }
-        if !case_sensitive && !needle.is_ascii() {
-            pats.extend(case_variants(needle));
-        } else if !case_sensitive {
-            // ASCII: достаточно одного паттерна + ascii_case_insensitive.
-        }
-        if pats.is_empty() {
-            pats.push(needle.to_string());
-        }
-        let maxlen = pats.iter().map(|p| p.len()).max().unwrap_or(1).max(1);
-        let mut builder = aho_corasick::AhoCorasick::builder();
-        builder.ascii_case_insensitive(!case_sensitive && needle.is_ascii());
-        let ac = builder
-            .build(pats.iter().map(|p| p.as_bytes()))
-            .map_err(|e| io::Error::other(format!("aho: {e}")))?;
+        let snap = self.snapshot();
+        let r = crate::search::run_once(&snap, needle, case_sensitive, limit, cancel);
+        Ok(SearchStats {
+            hits: r
+                .hits
+                .into_iter()
+                .map(|h| SearchHit {
+                    byte: h.byte,
+                    len: h.len,
+                    line: h.line,
+                    col: h.col,
+                    col_bytes: h.col_bytes,
+                    len_chars: h.len_chars,
+                    eps: h.eps,
+                })
+                .collect(),
+            truncated: r.truncated,
+            cancelled: r.cancelled,
+            scanned_bytes: r.scanned,
+            elapsed: started.elapsed(),
+        })
+    }
 
-        let mut raw: Vec<(u64, usize)> = Vec::new();
-        // Перенос через границы кусков: хвост конкатенации длиной maxlen-1.
-        let mut carry: Vec<u8> = Vec::with_capacity(maxlen);
-        // Буфер шва: перенос + начало куска (переиспользуется, без 16МБ копий).
-        let mut seam: Vec<u8> = Vec::with_capacity(2 * maxlen);
-        let mut scanned: u64 = 0;
-        'outer: for i in 0..self.pieces.len() {
-            if cancel.load(Ordering::Relaxed) {
-                out.cancelled = true;
-                break;
-            }
-            let pstart = self.piece_start(i);
-            let bytes = self.piece_bytes(i);
-            let is_orig = matches!(self.pieces[i].src, Src::Orig { .. });
-            if is_orig {
-                if let Src::Orig { start } = self.pieces[i].src {
-                    #[cfg(unix)]
-                    self.advise(start, bytes.len(), libc::MADV_SEQUENTIAL);
-                }
-            }
-            // 1) Прямой скан куска.
-            for m in ac.find_iter(bytes) {
-                raw.push((pstart + m.start() as u64, m.len()));
-                if raw.len() >= limit {
-                    out.truncated = true;
-                    break 'outer;
-                }
-            }
-            // 2) Шов: совпадения, начавшиеся в переносе и пересёкшие границу.
-            if !carry.is_empty() && !bytes.is_empty() {
-                let cl = carry.len();
-                seam.clear();
-                seam.extend_from_slice(&carry);
-                seam.extend_from_slice(&bytes[..(maxlen - 1).min(bytes.len())]);
-                for m in ac.find_iter(&seam) {
-                    let (ms, mlen) = (m.start(), m.len());
-                    if ms < cl && ms + mlen > cl {
-                        // стыковое совпадение: начало в переносе, конец в куске
-                        raw.push((pstart - cl as u64 + ms as u64, mlen));
-                        if raw.len() >= limit {
-                            out.truncated = true;
-                            break 'outer;
-                        }
-                    }
-                }
-            }
-            scanned += bytes.len() as u64;
-            // Перенос = последние maxlen-1 байт конкатенации (кусок может
-            // быть короче — тогда хвост добирается из старого переноса).
-            let keep = maxlen - 1;
-            if bytes.len() >= keep {
-                carry.clear();
-                carry.extend_from_slice(&bytes[bytes.len() - keep..]);
-            } else {
-                let mut nc: Vec<u8> = Vec::with_capacity(keep);
-                if carry.len() + bytes.len() > keep {
-                    let skip = carry.len() + bytes.len() - keep;
-                    nc.extend_from_slice(&carry[skip..]);
-                } else {
-                    nc.extend_from_slice(&carry);
-                }
-                nc.extend_from_slice(bytes);
-                carry = nc;
-            }
-            // Страницы отсканированного куска возвращаем ядру (как harvester).
-            if is_orig {
-                if let Src::Orig { start } = self.pieces[i].src {
-                    #[cfg(unix)]
-                    self.advise(start, bytes.len(), libc::MADV_DONTNEED);
-                }
-            }
+    /// Неизменяемый снапшот для фонового сканера (Search Engine v2).
+    /// Клонирование — O(кусков) метаданных; байты не копируются.
+    pub fn snapshot(&self) -> BufSnapshot {
+        BufSnapshot {
+            total_len: self.total_len(),
+            mmap: self.mmap.clone(),
+            edit_bufs: Arc::new(self.edit_bufs.clone()),
+            pieces: self.pieces.clone(),
+            cum: self.cum.clone(),
         }
-        out.scanned_bytes = scanned;
-
-        // Прямой скан и скан шва дают hits вне порядка; курсору фазы 2
-        // нужен возрастающий порядок байтов (дешёвая сортировка ≤ limit).
-        raw.sort_unstable();
-
-        // Строки/столбцы: потоковый курсор от начала документа — каждый \n
-        // посещается ровно один раз на ВЕСЬ список hits (O(документа), а не
-        // O(hits × кусок)). Одновременно это ленивая достройка line-index.
-        let mut pos: u64 = 0;
-        let mut line_start: u64 = 0;
-        let mut line: u64 = 0;
-        for (byte, len) in raw {
-            while pos < byte {
-                match self.next_newline_from(pos) {
-                    Some(nl) if nl < byte => {
-                        line += 1;
-                        pos = nl + 1;
-                        line_start = nl + 1;
-                    }
-                    _ => pos = byte,
-                }
-            }
-            out.hits.push(SearchHit {
-                byte,
-                len,
-                line,
-                col: byte - line_start,
-            });
-        }
-        out.elapsed = started.elapsed();
-        Ok(out)
     }
 }
 
+/// Неизменяемый срез состояния буфера для фоновых сканеров (Search v2).
+///
+/// * mmap и edit-куски — Arc-ссылки на байты, живущие пока жив снапшот;
+///   правки после снапшота не рвут ссылки (append-only, `append_edit`);
+/// * pieces/cum — клоны метаданы (O(кусков), байты не трогаются).
+pub struct BufSnapshot {
+    pub total_len: u64,
+    mmap: Option<Arc<Mmap>>,
+    edit_bufs: Arc<Vec<Arc<Vec<u8>>>>,
+    pub pieces: Vec<Piece>,
+    cum: Vec<u64>,
+}
+
+impl BufSnapshot {
+    pub fn pieces_len(&self) -> usize {
+        self.pieces.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.pieces.is_empty()
+    }
+
+    #[inline]
+    pub fn piece_start(&self, i: usize) -> u64 {
+        self.cum[i] - self.pieces[i].len as u64
+    }
+
+    #[inline]
+    pub fn piece_bytes(&self, i: usize) -> &[u8] {
+        let p = &self.pieces[i];
+        match p.src {
+            Src::Orig { start } => {
+                let m = self.mmap.as_ref().expect("кусок Orig без mmap");
+                &m[start as usize..(start + p.len as u64) as usize]
+            }
+            Src::Edit { buf, start } => {
+                let b = &self.edit_bufs[buf as usize];
+                &b[start as usize..(start + p.len as u64) as usize]
+            }
+        }
+    }
+
+    /// Индекс куска, содержащего байтовое смещение off.
+    #[inline]
+    pub fn locate(&self, off: u64) -> usize {
+        debug_assert!(off < self.total_len);
+        match self.cum.binary_search(&off) {
+            Ok(i) => i + 1,
+            Err(i) => i,
+        }
+    }
+
+    /// Прочитать диапазон [start, start+len) в выделенный буфер
+    /// (для ε-окон и якорей строк; не для bulk-сканов — они zero-copy).
+    pub fn read_range(&self, start: u64, len: usize) -> Vec<u8> {
+        let mut v = Vec::new();
+        self.read_range_into(&mut v, start, len);
+        v
+    }
+
+    /// `read_range` без аллокаций: заполняет переиспользуемый scratch
+    /// (нулевые выделения в горячем цикле ε-окон).
+    pub fn read_range_into(&self, scratch: &mut Vec<u8>, start: u64, len: usize) {
+        scratch.clear();
+        let total = self.total_len;
+        if start >= total || len == 0 {
+            return;
+        }
+        let end = (start + len as u64).min(total);
+        scratch.reserve((end - start) as usize);
+        let mut off = start;
+        while off < end {
+            let i = self.locate(off);
+            let pstart = self.piece_start(i);
+            let intra = (off - pstart) as usize;
+            let avail = self.pieces[i].len as usize - intra;
+            let take = avail.min((end - off) as usize);
+            scratch.extend_from_slice(&self.piece_bytes(i)[intra..intra + take]);
+            off += take as u64;
+        }
+    }
+
+    /// Совет ядру о чтении КУСКА-оригинала: SEQUENTIAL перед сканом,
+    /// DONTNEED после (как harvester: RSS не растёт от размера файла,
+    /// данные остаются в page cache). Edit-куски — куча, advice не нужен.
+    #[cfg(unix)]
+    pub(crate) fn advise_piece(&self, i: usize, before: bool) {
+        if let (Some(m), Src::Orig { start }) = (&self.mmap, self.pieces[i].src) {
+            let len = self.pieces[i].len as usize;
+            unsafe {
+                libc::madvise(
+                    m.as_ptr().add(start as usize) as *mut libc::c_void,
+                    len,
+                    if before {
+                        libc::MADV_SEQUENTIAL
+                    } else {
+                        libc::MADV_DONTNEED
+                    },
+                );
+            }
+        }
+    }
+
+    #[cfg(not(unix))]
+    #[allow(unused_variables)]
+    pub(crate) fn advise_piece(&self, i: usize, before: bool) {}
+}
+
 /// Три варианта регистра для кириллицы/юникода (как в poler_disk_harvester).
-fn case_variants(word: &str) -> Vec<String> {
+pub(crate) fn case_variants(word: &str) -> Vec<String> {
     let lower = word.to_lowercase();
     let upper = word.to_uppercase();
     // Первая БУКВА (не байт!) в верхний регистр — кириллица 2-байтовая.

@@ -1,6 +1,6 @@
-// Асинхронный мост к `poler-engine --edit-serve` (JSON lines поверх stdio).
-// Паттерн проверен интеграцией kate-poler: неблокирующий QProcess,
-// построчная буферизация stdout, ответы маршрутизируются по reqId.
+// Асинхронный мост к ядру poler-edit-core (JSON lines поверх stdio).
+// Неблокирующий QProcess, построчная буферизация stdout, ответы
+// маршрутизируются по reqId; события — по типу "ev".
 
 #pragma once
 
@@ -30,8 +30,18 @@ public:
                        const QString &text, const Callback &cb);
     qlonglong del(qlonglong doc, qlonglong sl, qlonglong sc,
                   qlonglong el, qlonglong ec, const Callback &cb);
+    // Синхронный поиск (одним ответом).
     qlonglong search(qlonglong doc, const QString &query, bool caseSensitive,
                      int limit, const Callback &cb);
+    // Search Engine v2 — ЖИВОЙ поиск: мгновенный ack {sid} в cb, дальше
+    // поток событий searchEvent (hits / viewport_done / search_done).
+    // viewport [vpFrom..vpTo) — строки приоритетного окна (первые hits
+    // приходят за миллисекунды, до завершения полного скана).
+    qlonglong searchLive(qlonglong doc, const QString &query, bool caseSensitive,
+                         int limit, qlonglong vpFrom, qlonglong vpTo,
+                         const Callback &cb);
+    // Активация Pro-лицензии (Ed25519, офлайн-валидация в ядре).
+    qlonglong licenseActivate(const QString &key, const Callback &cb);
     qlonglong save(qlonglong doc, const Callback &cb);
     qlonglong saveAs(qlonglong doc, const QString &path, const Callback &cb);
     qlonglong undo(qlonglong doc, const Callback &cb);
@@ -42,8 +52,10 @@ public:
     static QString enginePath();
 
 signals:
-    // События сервера: {"ev":"progress","op":...,"doc":...}
+    // {"ev":"progress","op":...,"doc":...} — индексация/прогресс поиска.
     void progressEvent(const QJsonObject &obj);
+    // Search Engine v2: {"ev":"hits"|viewport_done|search_done, "sid":...}.
+    void searchEvent(const QJsonObject &obj);
     void engineDied();
 
 private:

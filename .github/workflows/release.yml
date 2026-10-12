@@ -27,6 +27,14 @@ jobs:
           cd core
           cargo build --release
 
+      - name: Test poler-edit-core (unit + protocol + license)
+        # ГРАБЛЯ №1 закрыта: cargo test больше не падает от отсутствия tempfile
+        # в dev-dependencies. Прогоняем на Linux-джобе — быстрый фидбек
+        # по регрессиям поиска (ε, резонанс, снапшот-изоляция) и лицензий.
+        run: |
+          cd core
+          cargo test --quiet
+
       - name: Install Qt6 & CMake
         run: |
           sudo apt-get update

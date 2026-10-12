@@ -1,6 +1,6 @@
 //! poler-edit :: редакторский серверный протокол (LSP-стиль, JSON lines).
 //!
-//! `poler-engine --edit-serve`:
+//! `poler-edit-core`:
 //! * stdin  — одна JSON-команда на строку: {"id":N,"cmd":"open","path":...}
 //! * stdout — ответы {"id":N,"ok":true,...} и события {"ev":"progress",...}
 //!
@@ -8,7 +8,14 @@
 //! * главный поток читает stdin и раздаёт задания воркеру (owning все буферы);
 //! * воркер исполняет и пишет ответы/прогресс в общий stdout (через writer);
 //! * отмена ("cancel") ставит AtomicBool НАПРЯМУЮ из главного потока —
-//!   бегущий поиск/индексация видят её без очереди.
+//!   бегущий поиск/индексация видят её без очереди;
+//! * ЖИВОЙ ПОИСК (Search Engine v2, "search_live") работает ВНЕ очереди
+//!   заданий: воркер делает снапшот piece-table и отпускает сессию в
+//!   собственный поток (rayon-скан) — вьюпорты/правки не блокируются
+//!   даже на гигабайтных файлах. События: {"ev":"hits","sid":...},
+//!   {"ev":"progress","op":"search"}, {"ev":"viewport_done"},
+//!   финал {"ev":"search_done",...}. Каждая новая search_live того же doc
+//!   отменяет предыдущую сессию; sid монотонно растёт — GUI фильтрует старицу.
 //!
 //! GUI-клиент: integrations/poler-edit-qt (Qt6, Kate-подобный интерфейс).
 //!
@@ -21,23 +28,28 @@
 //!   linecol {doc,byte} -> {line,col}            (col — в символах)
 //!   insert_at {doc,line,col,text}               (col — в символах)
 //!   delete {doc,start_line,start_col,end_line,end_col}
-//!   search {doc,query,case_sensitive,limit} -> {hits:[{byte,line,col,len}],...}
+//!   search {doc,query,case_sensitive,limit} -> {hits:[{byte,line,col,col_bytes,len,len_chars,eps}],...}
+//!   search_live {doc,query,case_sensitive,limit,viewport:[line_from,line_to]}
+//!       -> мгновенный ack {sid} + события hits/progress/viewport_done/search_done
 //!   index {doc} -> {lines}                      (с событиями progress)
 //!   save {doc} / save_as {doc,path}
 //!   undo {doc} / redo {doc}
-//!   cancel                                      (отмена бегущего поиска/индекса)
+//!   license_activate {key} -> {valid,name,edition,expires,perpetual,reason}
+//!   cancel                                      (отмена бегущего поиска/индекса/сессий)
 //!   quit
 
 use std::collections::HashMap;
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{mpsc, Arc};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
 use serde_json::{json, Value};
 
 use super::buffer::PolerBuffer;
+use super::license;
+use super::search::{self, HitOut, LiveSpec, SearchEvents};
 
 /// Один процесс — много документов (вкладки GUI).
 struct Docs {
@@ -67,6 +79,16 @@ enum Job {
     InsertAt { id: u64, doc: u64, line: u64, col: u64, text: String },
     DeleteSel { id: u64, doc: u64, sl: u64, sc: u64, el: u64, ec: u64 },
     Search { id: u64, doc: u64, query: String, case_sensitive: bool, limit: usize },
+    SearchLive {
+        id: u64,
+        doc: u64,
+        query: String,
+        case_sensitive: bool,
+        limit: usize,
+        vp_from: u64,
+        vp_to: u64,
+    },
+    LicenseActivate { id: u64, key: String },
     Index { id: u64, doc: u64 },
     Save { id: u64, doc: u64 },
     SaveAs { id: u64, doc: u64, path: PathBuf },
@@ -75,9 +97,66 @@ enum Job {
     Quit,
 }
 
-/// Точка входа `--edit-serve`. Возвращает код выхода.
+/// Сериализатор событий живого поиска в JSON-строки (в writer-поток).
+struct JsonEvents {
+    tx: mpsc::Sender<String>,
+    sid: u64,
+    doc: u64,
+}
+
+fn round2(x: f64) -> f64 {
+    (x * 100.0).round() / 100.0
+}
+
+fn hit_json(h: &HitOut) -> Value {
+    json!({
+        "byte": h.byte,
+        "line": h.line,
+        "col": h.col,
+        "col_bytes": h.col_bytes,
+        "len": h.len,
+        "len_chars": h.len_chars,
+        "eps": round2(h.eps),
+        "R": round2(h.r),
+    })
+}
+
+impl SearchEvents for JsonEvents {
+    fn on_hits(&mut self, phase: &str, hits: &[HitOut], scanned: u64, total: u64) {
+        let arr: Vec<Value> = hits.iter().map(hit_json).collect();
+        let _ = self.tx.send(
+            json!({
+                "ev": "hits", "sid": self.sid, "doc": self.doc, "phase": phase,
+                "hits": arr, "scanned": scanned, "total": total,
+            })
+            .to_string(),
+        );
+    }
+    fn on_progress(&mut self, scanned: u64, total: u64) {
+        let _ = self.tx.send(
+            json!({
+                "ev": "progress", "op": "search", "sid": self.sid, "doc": self.doc,
+                "done_bytes": scanned, "total_bytes": total,
+            })
+            .to_string(),
+        );
+    }
+    fn on_viewport_done(&mut self, ms: f64) {
+        let _ = self.tx.send(
+            json!({
+                "ev": "viewport_done", "sid": self.sid, "doc": self.doc, "ms": round2(ms),
+            })
+            .to_string(),
+        );
+    }
+}
+
+/// Точка входа сервера. Возвращает код выхода.
 pub fn run_edit_server() -> i32 {
     let cancel: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
+    let sessions: Arc<Mutex<HashMap<u64, Arc<AtomicBool>>>> =
+        Arc::new(Mutex::new(HashMap::new()));
+    let sid_counter = Arc::new(AtomicU64::new(0));
     let (tx_out, rx_out) = mpsc::channel::<String>();
     let (tx_job, rx_job) = mpsc::channel::<Job>();
 
@@ -95,10 +174,12 @@ pub fn run_edit_server() -> i32 {
     // Воркер: владеет всеми документами, исполняет тяжёлые операции.
     let cancel_w = Arc::clone(&cancel);
     let tx_out_w = tx_out.clone();
+    let sessions_w = Arc::clone(&sessions);
+    let sid_w = Arc::clone(&sid_counter);
     let worker = thread::spawn(move || {
         let mut docs = Docs::new();
         while let Ok(job) = rx_job.recv() {
-            let resp = handle(&mut docs, job, &cancel_w, &tx_out_w);
+            let resp = handle(&mut docs, job, &cancel_w, &tx_out_w, &sessions_w, &sid_w);
             if let Some(line) = resp {
                 let _ = tx_out_w.send(line);
             } else {
@@ -181,6 +262,38 @@ pub fn run_edit_server() -> i32 {
                 case_sensitive: v.get("case_sensitive").and_then(|x| x.as_bool()).unwrap_or(true),
                 limit: u64_of(&v, "limit").clamp(1, 100_000) as usize,
             },
+            "search_live" => {
+                let vp = v.get("viewport").and_then(|x| x.as_array()).map(|a| {
+                    let from = a.first().and_then(|x| x.as_u64()).unwrap_or(0);
+                    let to = a.get(1).and_then(|x| x.as_u64()).unwrap_or(0);
+                    (from, to)
+                });
+                Job::SearchLive {
+                    id,
+                    doc: doc_of(&v),
+                    query: v
+                        .get("query")
+                        .and_then(|x| x.as_str())
+                        .unwrap_or("")
+                        .chars()
+                        .take(4096)
+                        .collect(),
+                    case_sensitive: v
+                        .get("case_sensitive")
+                        .and_then(|x| x.as_bool())
+                        .unwrap_or(true),
+                    limit: u64_of(&v, "limit").clamp(1, 100_000) as usize,
+                    vp_from: vp.map(|p| p.0).unwrap_or(0),
+                    vp_to: vp.map(|p| p.1).unwrap_or(0),
+                }
+            }
+            "license_activate" => match v.get("key").and_then(|x| x.as_str()) {
+                Some(k) => Job::LicenseActivate { id, key: k.to_string() },
+                None => {
+                    err(&tx_out, id, "license_activate: поле key обязательно");
+                    continue;
+                }
+            },
             "index" => Job::Index { id, doc: doc_of(&v) },
             "save" => Job::Save { id, doc: doc_of(&v) },
             "save_as" => match req_path(&v) {
@@ -193,7 +306,13 @@ pub fn run_edit_server() -> i32 {
             "undo" => Job::Undo { id, doc: doc_of(&v) },
             "redo" => Job::Redo { id, doc: doc_of(&v) },
             "cancel" => {
+                // Мгновенно: глобальный флаг + все живые сессии поиска.
                 cancel.store(true, Ordering::Relaxed);
+                if let Ok(s) = sessions.lock() {
+                    for tok in s.values() {
+                        tok.store(true, Ordering::Relaxed);
+                    }
+                }
                 let _ = tx_out.send(json!({"id": id, "ok": true, "cancelled": true}).to_string());
                 continue;
             }
@@ -267,6 +386,8 @@ fn handle(
     job: Job,
     cancel: &Arc<AtomicBool>,
     tx: &mpsc::Sender<String>,
+    sessions: &Arc<Mutex<HashMap<u64, Arc<AtomicBool>>>>,
+    sid_counter: &Arc<AtomicU64>,
 ) -> Option<String> {
     let id = job_id(&job);
     let doc = job_doc(&job);
@@ -291,6 +412,12 @@ fn handle(
             Err(e) => json!({"id": id, "ok": false, "error": e.to_string()}),
         },
         Job::Close { .. } => {
+            // Живой поиск этого документа — остановить немедленно.
+            if let Ok(mut s) = sessions.lock() {
+                if let Some(tok) = s.remove(&doc) {
+                    tok.store(true, Ordering::Relaxed);
+                }
+            }
             docs.map.remove(&doc);
             json!({"id": id, "ok": true})
         }
@@ -366,10 +493,7 @@ fn handle(
                 match st {
                     Ok(st) => json!({
                         "id": id, "ok": true,
-                        "hits": st.hits.iter().map(|h| json!({
-                            "byte": h.byte, "line": h.line,
-                            "col": h.col, "len": h.len,
-                        })).collect::<Vec<_>>(),
+                        "hits": st.hits.iter().map(|h| hit_json_buffer(h)).collect::<Vec<_>>(),
                         "truncated": st.truncated,
                         "cancelled": st.cancelled,
                         "scanned_bytes": st.scanned_bytes,
@@ -379,6 +503,100 @@ fn handle(
                 }
             }
             None => json!({"id": id, "ok": false, "error": "нет такого doc"}),
+        },
+        Job::SearchLive {
+            query,
+            case_sensitive,
+            limit,
+            vp_from,
+            vp_to,
+            ..
+        } => match docs.map.get_mut(&doc) {
+            Some(b) => {
+                if query.is_empty() {
+                    // Пустой запрос: отменить активную сессию и ответить сразу.
+                    if let Ok(mut s) = sessions.lock() {
+                        if let Some(tok) = s.remove(&doc) {
+                            tok.store(true, Ordering::Relaxed);
+                        }
+                    }
+                    return Some(
+                        json!({"id": id, "ok": true, "sid": 0, "started": false, "hits": 0})
+                            .to_string(),
+                    );
+                }
+                // Приоритетное окно вьюпорта в байтах (лениво дотягивая
+                // line-index ровно до нужной строки — вьюпорт и так почти
+                // всегда проиндексирован рендером).
+                let total = b.total_len();
+                let vp = if vp_to > vp_from {
+                    let lo = b.offset_of_line(vp_from).unwrap_or(0).min(total);
+                    let hi = b.offset_of_line(vp_to).unwrap_or(total).min(total);
+                    if hi > lo {
+                        Some((lo, hi, vp_from, lo))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+                let snap = b.snapshot();
+                // Новая сессия отменяет старую того же документа.
+                let token = Arc::new(AtomicBool::new(false));
+                if let Ok(mut s) = sessions.lock() {
+                    if let Some(old) = s.insert(doc, Arc::clone(&token)) {
+                        old.store(true, Ordering::Relaxed);
+                    }
+                }
+                let sid = sid_counter.fetch_add(1, Ordering::Relaxed) + 1;
+                let tx2 = tx.clone();
+                let doc2 = doc;
+                let id2 = id;
+                thread::spawn(move || {
+                    let spec = LiveSpec {
+                        needle: query,
+                        case_sensitive,
+                        limit,
+                        viewport: vp,
+                    };
+                    let mut sink = JsonEvents { tx: tx2.clone(), sid, doc: doc2 };
+                    let sum = search::run_live(&snap, &spec, &token, &mut sink);
+                    let gbps = if sum.elapsed.as_secs_f64() > 0.0 {
+                        sum.scanned as f64 / 1_073_741_824.0 / sum.elapsed.as_secs_f64()
+                    } else {
+                        0.0
+                    };
+                    let _ = tx2.send(
+                        json!({
+                            "ev": "search_done", "id": id2, "sid": sid, "doc": doc2,
+                            "hits": sum.hits, "truncated": sum.truncated,
+                            "cancelled": sum.cancelled, "scanned": sum.scanned,
+                            "elapsed_ms": sum.elapsed.as_millis() as u64,
+                            "gbps": round2(gbps),
+                            "R": round2(sum.resonance),
+                            "viewport_ms": round2(sum.viewport_ms),
+                        })
+                        .to_string(),
+                    );
+                });
+                json!({
+                    "id": id, "ok": true, "sid": sid, "started": true,
+                    "limit": limit, "total_bytes": total,
+                })
+            }
+            None => json!({"id": id, "ok": false, "error": "нет такого doc"}),
+        },
+        Job::LicenseActivate { key, .. } => {
+            let info = license::validate_key(&key);
+            json!({
+                "id": id, "ok": true,
+                "valid": info.valid,
+                "name": info.name,
+                "edition": info.edition,
+                "expires": info.expires,
+                "perpetual": info.perpetual,
+                "reason": info.reason,
+            })
         },
         Job::Index { .. } => match docs.map.get_mut(&doc) {
             Some(b) => {
@@ -446,6 +664,19 @@ fn handle(
     Some(r.to_string())
 }
 
+/// JSON hit для синхронного `search` (SearchHit буфера).
+fn hit_json_buffer(h: &super::buffer::SearchHit) -> Value {
+    json!({
+        "byte": h.byte,
+        "line": h.line,
+        "col": h.col,
+        "col_bytes": h.col_bytes,
+        "len": h.len,
+        "len_chars": h.len_chars,
+        "eps": round2(h.eps),
+    })
+}
+
 fn job_id(j: &Job) -> u64 {
     match j {
         Job::Quit => 0,
@@ -458,6 +689,8 @@ fn job_id(j: &Job) -> u64 {
         | Job::InsertAt { id, .. }
         | Job::DeleteSel { id, .. }
         | Job::Search { id, .. }
+        | Job::SearchLive { id, .. }
+        | Job::LicenseActivate { id, .. }
         | Job::Index { id, .. }
         | Job::Save { id, .. }
         | Job::SaveAs { id, .. }
@@ -468,7 +701,7 @@ fn job_id(j: &Job) -> u64 {
 
 fn job_doc(j: &Job) -> u64 {
     match j {
-        Job::Open { .. } | Job::Quit => 0,
+        Job::Open { .. } | Job::Quit | Job::LicenseActivate { .. } => 0,
         Job::Close { doc, .. }
         | Job::Stats { doc, .. }
         | Job::Viewport { doc, .. }
@@ -477,6 +710,7 @@ fn job_doc(j: &Job) -> u64 {
         | Job::InsertAt { doc, .. }
         | Job::DeleteSel { doc, .. }
         | Job::Search { doc, .. }
+        | Job::SearchLive { doc, .. }
         | Job::Index { doc, .. }
         | Job::Save { doc, .. }
         | Job::SaveAs { doc, .. }

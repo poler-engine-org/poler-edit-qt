@@ -103,8 +103,14 @@ void EngineBridge::drainStdout()
             continue;
         }
         const QJsonObject obj = doc.object();
-        if (obj.contains("ev")) {
+        const QString ev = obj.value("ev").toString();
+        if (ev == QLatin1String("progress")) {
             emit progressEvent(obj);
+            continue;
+        }
+        if (!ev.isEmpty()) {
+            // Search Engine v2: hits / viewport_done / search_done.
+            emit searchEvent(obj);
             continue;
         }
         const qlonglong id = obj.value("id").toVariant().toLongLong();
@@ -180,6 +186,29 @@ qlonglong EngineBridge::search(qlonglong doc, const QString &query, bool caseSen
     send(QJsonObject{{"id", double(id)}, {"cmd", "search"}, {"doc", double(doc)},
                      {"query", query}, {"case_sensitive", caseSensitive},
                      {"limit", limit}});
+    return id;
+}
+
+qlonglong EngineBridge::searchLive(qlonglong doc, const QString &query, bool caseSensitive,
+                                    int limit, qlonglong vpFrom, qlonglong vpTo,
+                                    const Callback &cb)
+{
+    const qlonglong id = nextId();
+    m_pending.insert(id, cb);
+    QJsonArray vp;
+    vp.append(double(vpFrom));
+    vp.append(double(vpTo));
+    send(QJsonObject{{"id", double(id)}, {"cmd", "search_live"}, {"doc", double(doc)},
+                     {"query", query}, {"case_sensitive", caseSensitive},
+                     {"limit", limit}, {"viewport", vp}});
+    return id;
+}
+
+qlonglong EngineBridge::licenseActivate(const QString &key, const Callback &cb)
+{
+    const qlonglong id = nextId();
+    m_pending.insert(id, cb);
+    send(QJsonObject{{"id", double(id)}, {"cmd", "license_activate"}, {"key", key}});
     return id;
 }
 

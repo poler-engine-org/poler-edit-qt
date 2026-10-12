@@ -1,6 +1,6 @@
-// POLER Editor — точка входа.
+// POLER Edit — точка входа.
 // Kate-подобный суверенный редактор: GUI здесь тонкий, вся работа с текстом
-// любого размера — в ядре poler-edit (poler-engine --edit-serve).
+// любого размера — в автономном Rust-ядре poler-edit-core (JSON-lines stdio).
 
 #include <QApplication>
 #include <QCommandLineParser>
@@ -42,13 +42,14 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     QApplication::setApplicationName("poler-edit");
-    QApplication::setApplicationVersion("0.38.0");
+    QApplication::setApplicationVersion("2.0.0");
     QApplication::setOrganizationName("POLER Engine");
 
     QCommandLineParser cli;
     cli.setApplicationDescription(
-        "POLER Editor — суверенный текстовый редактор без лимитов размера файлов.\n"
-        "Ядро: poler-engine --edit-serve (zero-copy mmap piece-table).");
+        "POLER Edit — суверенний текстовий редактор без лiмiтiв розмiру файлiв.\n"
+        "Ядро: poler-edit-core (zero-copy mmap piece-table, Search Engine v2).\n"
+        "Пошук: живий потiк збiгiв, ε-енергiя значимостi, резонанс R(t).");
     cli.addHelpOption();
     cli.addVersionOption();
     cli.addOption({{"l", "light"}, "светлая тема (по умолчанию тёмная, как Breeze Dark)"});

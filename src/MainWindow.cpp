@@ -2,6 +2,9 @@
 
 #include <QApplication>
 #include <QCloseEvent>
+#include <QDateTime>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QHBoxLayout>
@@ -11,11 +14,17 @@
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSettings>
 #include <QStatusBar>
 #include <QStyle>
 #include <QTabWidget>
+#include <QTimer>
 #include <QToolBar>
 #include <QVBoxLayout>
+
+// As-you-type debounce: гигабайтные файлы сканируются потоково, но
+// дергать ядро на каждый keystroke незачем — 160 мс тишины достаточно.
+static constexpr int kFindDebounceMs = 160;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -48,6 +57,15 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_bridge, &EngineBridge::progressEvent, this, &MainWindow::onProgress);
     connect(m_bridge, &EngineBridge::engineDied, this, &MainWindow::onEngineDied);
 
+    // Debounce живого поиска (as-you-type).
+    m_findDebounce = new QTimer(this);
+    m_findDebounce->setSingleShot(true);
+    m_findDebounce->setInterval(kFindDebounceMs);
+    connect(m_findDebounce, &QTimer::timeout, this, &MainWindow::runLiveSearch);
+
+    // Офлайн-активация сохранённого Pro-ключа (Ed25519 в ядре).
+    validateStoredLicense();
+
     updateTitle();
 }
 
@@ -58,17 +76,55 @@ QWidget *MainWindow::buildSearchBar()
     lay->setContentsMargins(8, 4, 8, 4);
     m_searchEdit = new QLineEdit(m_searchBar);
     m_searchEdit->setPlaceholderText(
-        tr("Знайти (Enter — далі, Esc — закрити)"));
-    auto *next = new QPushButton(tr("Далі ▶"), m_searchBar);
+        tr("Знайти — живий пошук під час набору (Enter — далі, Esc — закрити)"));
+    m_searchEdit->setClearButtonEnabled(true);
+
+    // "Aa" — учёт регистра (по умолчанию чувствительный, как в grep).
+    m_caseBtn = new QPushButton(tr("Aa"), m_searchBar);
+    m_caseBtn->setCheckable(true);
+    m_caseBtn->setChecked(true);
+    m_caseBtn->setToolTip(tr("Враховувати регістр (grep-режим)"));
+    m_caseBtn->setFixedWidth(36);
+
+    auto *prev = new QPushButton(tr("◀"), m_searchBar);
+    auto *next = new QPushButton(tr("▶"), m_searchBar);
     auto *close = new QPushButton(tr("✕"), m_searchBar);
-    next->setFixedWidth(80);
+    prev->setFixedWidth(36);
+    next->setFixedWidth(36);
     close->setFixedWidth(32);
+
+    // Счётчик совпадений: "12/345…" — счёт растёт потоком во время скана,
+    // "…" исчезает по search_done; "⚠" — выдача обрезана лимитом (5000).
+    m_hitLabel = new QLabel(m_searchBar);
+    m_hitLabel->setMinimumWidth(90);
+    m_hitLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_hitLabel->setStyleSheet("color: #8da3b8;");
+
     lay->addWidget(m_searchEdit, 1);
+    lay->addWidget(m_caseBtn);
+    lay->addWidget(prev);
     lay->addWidget(next);
+    lay->addWidget(m_hitLabel);
     lay->addWidget(close);
+
     connect(next, &QPushButton::clicked, this, &MainWindow::findNext);
+    connect(prev, &QPushButton::clicked, this, &MainWindow::findPrev);
     connect(close, &QPushButton::clicked, m_searchBar, &QWidget::hide);
-    connect(m_searchEdit, &QLineEdit::returnPressed, this, &MainWindow::findNext);
+    // Enter — дальше, Shift+Enter — назад (как F3/Shift+F3).
+    connect(m_searchEdit, &QLineEdit::returnPressed, this, [this] {
+        if (QApplication::queryKeyboardModifiers() & Qt::ShiftModifier) {
+            findPrev();
+        } else {
+            findNext();
+        }
+    });
+    // As-you-type: перезапуск сессии с debounce; пустая строка — сброс.
+    connect(m_searchEdit, &QLineEdit::textChanged, this, [this](const QString &) {
+        m_findDebounce->start();
+    });
+    connect(m_caseBtn, &QPushButton::toggled, this, [this](bool) {
+        m_findDebounce->start();
+    });
     m_searchEdit->installEventFilter(this);
     m_searchBar->hide();
     return m_searchBar;
@@ -116,6 +172,7 @@ void MainWindow::attachView(EditorView *view)
     connect(view, &EditorView::cursorMoved, this, &MainWindow::onCursorMoved);
     connect(view, &EditorView::statusMessage, this, &MainWindow::onStatusMessage);
     connect(view, &EditorView::docModified, this, &MainWindow::onDocModified);
+    connect(view, &EditorView::hitCountChanged, this, &MainWindow::onHitCountChanged);
     connect(view, &EditorView::requestClose, this, [this, view] {
         const int i = m_tabs->indexOf(view);
         if (i >= 0) {
@@ -146,6 +203,12 @@ void MainWindow::onTabChanged(int)
     updateTitle();
     if (EditorView *v = currentView()) {
         m_modeLabel->setText(v->isIndexed() ? tr("рядки: точно") : tr("рядки: індекс…"));
+        // Панель поиска видима — переносим живой поиск на новый документ
+        // (каждая вкладка держит собственное состояние сессии).
+        if (m_searchBar && m_searchBar->isVisible() && !m_searchEdit->text().isEmpty()) {
+            v->searchLive(m_searchEdit->text(), m_caseBtn->isChecked());
+            onHitCountChanged(v->hitCount(), 0, v->searchActive(), false);
+        }
     }
 }
 
@@ -199,9 +262,13 @@ void MainWindow::buildMenus()
     QMenu *search = menuBar()->addMenu(tr("&Пошук"));
     search->addAction(tr("&Знайти…"), QKeySequence::Find, this, &MainWindow::onFind);
     search->addAction(tr("Знайти &далі"), QKeySequence(Qt::Key_F3), this, &MainWindow::findNext);
+    search->addAction(tr("Знайти &назад"), QKeySequence(Qt::SHIFT | Qt::Key_F3),
+                      this, &MainWindow::findPrev);
 
     QMenu *help = menuBar()->addMenu(tr("&Довідка"));
-    help->addAction(tr("&Про POLER Editor"), QKeySequence::HelpContents, this, &MainWindow::showAbout);
+    help->addAction(tr("&Про POLER Edit"), QKeySequence::HelpContents, this, &MainWindow::showAbout);
+    help->addSeparator();
+    help->addAction(tr("Активація &Pro…"), this, &MainWindow::showLicenseDialog);
 }
 
 void MainWindow::buildToolbar()
@@ -234,12 +301,16 @@ void MainWindow::buildStatusBar()
     m_bytesLabel = new QLabel(tr("— байт"), this);
     m_linesLabel = new QLabel(tr("— рядків"), this);
     m_modeLabel = new QLabel(tr("UTF-8"), this);
+    m_licLabel = new QLabel(tr("Free"), this);
     m_engineLabel = new QLabel(tr("POLER ●"), this);
-    for (QLabel *l : {m_posLabel, m_bytesLabel, m_linesLabel, m_modeLabel, m_engineLabel}) {
+    for (QLabel *l : {m_posLabel, m_bytesLabel, m_linesLabel, m_modeLabel,
+                      m_licLabel, m_engineLabel}) {
         l->setMargin(6);
         statusBar()->addPermanentWidget(l);
     }
     m_engineLabel->setStyleSheet("color: #2ecc71; font-weight: 600;");
+    m_licLabel->setStyleSheet("color: #8da3b8; font-weight: 600;");
+    m_licLabel->setToolTip(tr("Ліцензія: Довідка → Активація Pro…"));
 }
 
 void MainWindow::onCursorMoved(qlonglong line, qlonglong col)
@@ -269,7 +340,9 @@ void MainWindow::onEngineDied()
     m_engineLabel->setText(tr("POLER ○"));
     m_engineLabel->setStyleSheet("color: #da4453; font-weight: 600;");
     statusBar()->showMessage(
-        tr("Ядро poler-engine недоступне. Перевірте poler-engine у PATH."), 10000);
+        tr("Ядро poler-edit-core недоступне. Перевірте встановлення "
+           "(змінна POLER_EDIT_CORE або core/target/release/poler-edit-core)."),
+        10000);
 }
 
 void MainWindow::updateTabTitle(EditorView *view)
@@ -374,13 +447,55 @@ void MainWindow::closeEvent(QCloseEvent *e)
     e->accept();
 }
 
-// ---------------- поиск ----------------
+// ---------------- поиск (Search Engine v2, live) ----------------
 
 void MainWindow::onFind()
 {
     m_searchBar->show();
     m_searchEdit->setFocus();
     m_searchEdit->selectAll();
+    // Повторный Ctrl+F с уже набранным запросом — мгновенный перезапуск
+    // с текущим окном вьюпорта активной вкладки.
+    if (currentView() && !m_searchEdit->text().isEmpty()) {
+        m_findDebounce->start();
+    }
+}
+
+void MainWindow::runLiveSearch()
+{
+    EditorView *v = currentView();
+    if (!v) {
+        return;
+    }
+    const QString q = m_searchEdit->text();
+    if (q.isEmpty()) {
+        v->clearSearch();
+        onHitCountChanged(0, 0, false, false);
+        return;
+    }
+    v->searchLive(q, m_caseBtn->isChecked());
+}
+
+void MainWindow::onHitCountChanged(int total, int current, bool scanning, bool truncated)
+{
+    // Счётчик показывает сессию АКТИВНОЙ вкладки (сигналы фоновых
+    // вкладок приходят от их собственных live-сессий — игнорируем).
+    if (sender() && sender() != currentView()) {
+        return;
+    }
+    if (!m_hitLabel) {
+        return;
+    }
+    if (total <= 0) {
+        m_hitLabel->setText(scanning ? tr("скан…") : QString());
+        return;
+    }
+    // "5/345…" — потоковый счёт; "⚠" — лимит в 5000 совпадений.
+    m_hitLabel->setText(tr("%1/%2%3%4")
+                            .arg(current + 1)
+                            .arg(total)
+                            .arg(scanning ? tr("…") : QString())
+                            .arg(truncated ? tr(" ⚠") : QString()));
 }
 
 void MainWindow::findNext()
@@ -392,7 +507,24 @@ void MainWindow::findNext()
     if (v->hitCount() > 0) {
         v->nextHit();
     } else if (!m_searchEdit->text().isEmpty()) {
-        v->search(m_searchEdit->text(), false);
+        // Enter раньше debounce — запускаем немедленно (фаза вьюпорта
+        // выдаст первые совпадения и авто-переход за миллисекунды).
+        m_findDebounce->stop();
+        v->searchLive(m_searchEdit->text(), m_caseBtn->isChecked());
+    }
+}
+
+void MainWindow::findPrev()
+{
+    EditorView *v = currentView();
+    if (!v) {
+        return;
+    }
+    if (v->hitCount() > 0) {
+        v->prevHit();
+    } else if (!m_searchEdit->text().isEmpty()) {
+        m_findDebounce->stop();
+        v->searchLive(m_searchEdit->text(), m_caseBtn->isChecked());
     }
 }
 
@@ -470,12 +602,96 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *e)
 void MainWindow::showAbout()
 {
     QMessageBox::about(
-        this, tr("POLER Editor"),
-        tr("<b>POLER Editor 0.38.0</b><br/>"
+        this, tr("POLER Edit"),
+        tr("<b>POLER Edit 2.0</b><br/>"
            "Суверенний текстовий редактор без лімітів розміру файлів.<br/><br/>"
-           "Ядро: poler-engine --edit-serve<br/>"
-           "Zero-copy mmap piece-table + SIMD Aho-Corasick + ленивий line-index.<br/><br/>"
-           "100 GiB файл відкривається за 0.1 мс; RAM не залежить від розміру.<br/>"
-           "<a href=\"https://github.com/poler-engine-org/poler-engine\">"
-           "github.com/poler-engine-org/poler-engine</a>"));
+           "Ядро: <b>poler-edit-core</b> (автономний Rust, Zero-Copy Piece-Table).<br/>"
+           "Пошук: <b>Search Engine v2</b> — багатопотоковий SIMD-скан, "
+           "живий потік збігів, ε-енергія значимості, резонанс R(t).<br/>"
+           "Файли 1–10 ГБ відкриваються за 0.05 с; RAM не залежить від розміру.<br/><br/>"
+           "Ліцензування Pro: Ed25519, офлайн-валідація.<br/>"
+           "<a href=\"https://github.com/poler-engine-org/poler-edit-qt\">"
+           "github.com/poler-engine-org/poler-edit-qt</a>"));
+}
+
+// ---------------- лицензия Pro (Ed25519, офлайн) ----------------
+
+void MainWindow::showLicenseDialog()
+{
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Активація POLER Edit Pro"));
+    dlg.setModal(true);
+    auto *lay = new QVBoxLayout(&dlg);
+    auto *info = new QLabel(
+        tr("Введіть ліцензійний ключ видавця (формат <b>PE1-…</b>).<br/>"
+           "Валідація — офлайн, підпис Ed25519 перевіряється локально в ядрі."),
+        &dlg);
+    info->setWordWrap(true);
+    auto *edit = new QLineEdit(&dlg);
+    edit->setPlaceholderText(QStringLiteral("PE1-..."));
+    edit->setText(QSettings().value(QStringLiteral("license/key")).toString());
+    edit->setMinimumWidth(420);
+    auto *btns = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+    btns->button(QDialogButtonBox::Ok)->setText(tr("&Активувати"));
+    connect(btns, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(btns, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    lay->addWidget(info);
+    lay->addWidget(edit);
+    lay->addWidget(btns);
+
+    if (dlg.exec() != QDialog::Accepted || edit->text().trimmed().isEmpty()) {
+        return;
+    }
+    const QString key = edit->text().trimmed();
+    m_bridge->licenseActivate(key, [this, key](const QJsonObject &r) {
+        if (r.value("valid").toBool()) {
+            QSettings().setValue(QStringLiteral("license/key"), key);
+            applyLicenseLabel(r.value("name").toString(),
+                              r.value("perpetual").toBool(),
+                              r.value("expires").toVariant().toLongLong());
+            QMessageBox::information(
+                this, tr("Pro активовано"),
+                tr("Дякуємо, %1! Ліцензію Pro активовано та збережено локально.")
+                    .arg(r.value("name").toString()));
+        } else {
+            QMessageBox::warning(
+                this, tr("Ключ не прийнято"),
+                tr("Причина: %1").arg(r.value("reason").toString()));
+        }
+    });
+}
+
+void MainWindow::validateStoredLicense()
+{
+    const QString key = QSettings().value(QStringLiteral("license/key")).toString();
+    if (key.isEmpty()) {
+        return; // Free-режим — статус-бар уже показывает "Free"
+    }
+    m_bridge->licenseActivate(key, [this](const QJsonObject &r) {
+        if (r.value("valid").toBool()) {
+            applyLicenseLabel(r.value("name").toString(),
+                              r.value("perpetual").toBool(),
+                              r.value("expires").toVariant().toLongLong());
+        } else {
+            // Ключ просрочился/отозван — тихо возвращаемся в Free.
+            QSettings().remove(QStringLiteral("license/key"));
+        }
+    });
+}
+
+void MainWindow::applyLicenseLabel(const QString &name, bool perpetual, qlonglong expires)
+{
+    if (!m_licLabel) {
+        return;
+    }
+    QString until;
+    if (perpetual) {
+        until = tr("нескінченною");
+    } else if (expires > 0) {
+        until = QDateTime::fromSecsSinceEpoch(expires).date().toString(Qt::ISODate);
+    }
+    m_licLabel->setText(tr("Pro · %1").arg(name));
+    m_licLabel->setStyleSheet("color: #f39c12; font-weight: 700;");
+    m_licLabel->setToolTip(tr("POLER Edit Pro — %1 (до %2)")
+                               .arg(name, until.isEmpty() ? tr("—") : until));
 }

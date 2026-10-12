@@ -1,7 +1,4 @@
-pub mod buffer;
-pub mod protocol;
-
 fn main() {
-    let code = protocol::run_edit_server();
+    let code = poler_edit_core::protocol::run_edit_server();
     std::process::exit(code);
 }
