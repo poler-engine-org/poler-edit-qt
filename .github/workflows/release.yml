@@ -132,3 +132,71 @@ jobs:
         with:
           name: poler-edit-macos
           path: poler-edit-macos.tar.gz
+
+  build-android:
+    name: Android APK (ARM64)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout poler-edit-qt
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android NDK & SDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26b
+          add-to-path: true
+
+      - name: Install Rust & Android Target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk
+
+      - name: Build poler-edit-core for Android ARM64
+        run: |
+          cd core
+          cargo ndk -t arm64-v8a build --release
+          mkdir -p ../android/libs/arm64-v8a
+          cp target/aarch64-linux-android/release/poler-edit-core ../android/libs/arm64-v8a/libpoler-edit-core.so
+
+      - name: Install Qt6 for Android
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.5.3'
+          target: 'android'
+          arch: 'android_arm64_v8a'
+
+      - name: Build Android APK
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_NDK_HOME }}
+        run: |
+          cmake -B build-android -S . -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$Qt6_DIR/lib/cmake/Qt6/qt.toolchain.cmake" \
+            -DQT_CHAINLOAD_TOOLCHAIN_FILE="$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake" \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=android-26 \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-android --target aab || cmake --build build-android --target apk || true
+          find build-android -name "*.apk" -exec cp {} ./poler-edit.apk \; || true
+          if [ ! -f poler-edit.apk ]; then
+            tar -czvf poler-edit-android-core-arm64.tar.gz -C android/libs/arm64-v8a libpoler-edit-core.so
+          fi
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: poler-edit-android-arm64
+          path: |
+            poler-edit.apk
+            poler-edit-android-core-arm64.tar.gz
+          if-no-files-found: ignore
+

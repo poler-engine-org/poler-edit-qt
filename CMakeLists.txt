@@ -23,5 +23,11 @@ add_executable(poler-edit
 
 target_link_libraries(poler-edit PRIVATE Qt6::Widgets)
 
+if(ANDROID)
+    set_target_properties(poler-edit PROPERTIES
+        QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android"
+    )
+endif()
+
 include(GNUInstallDirs)
 install(TARGETS poler-edit RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
