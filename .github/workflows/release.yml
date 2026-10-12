@@ -1,0 +1,107 @@
+name: Release Builds
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    name: Linux x86_64
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout poler-edit-qt
+        uses: actions/checkout@v4
+
+      - name: Install Qt6 & CMake
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build qt6-base-dev libgl1-mesa-dev
+
+      - name: Configure CMake
+        run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Package Linux Binary
+        run: |
+          mkdir -p dist
+          cp build/poler-edit dist/poler-edit
+          tar -czvf poler-edit-linux-x86_64.tar.gz -C dist poler-edit
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: poler-edit-linux-x86_64
+          path: poler-edit-linux-x86_64.tar.gz
+
+  build-windows:
+    name: Windows x86_64
+    runs-on: windows-latest
+    steps:
+      - name: Checkout poler-edit-qt
+        uses: actions/checkout@v4
+
+      - name: Install Qt6 via jurplel/install-qt-action
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.5.3'
+          arch: 'win64_msvc2019_64'
+
+      - name: Enable MSVC Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Configure CMake
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Package Windows Binary
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp build/Release/poler-edit.exe dist/ || cp build/poler-edit.exe dist/
+          windeployqt dist/poler-edit.exe --no-translations --compiler-runtime
+          cd dist && 7z a ../poler-edit-windows-x86_64.zip *
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: poler-edit-windows-x86_64
+          path: poler-edit-windows-x86_64.zip
+
+  build-macos:
+    name: macOS Universal
+    runs-on: macos-latest
+    steps:
+      - name: Checkout poler-edit-qt
+        uses: actions/checkout@v4
+
+      - name: Install Qt6
+        run: brew install qt cmake ninja
+
+      - name: Configure CMake
+        run: cmake -B build -S . -G Ninja -DCMAKE_PREFIX_PATH="$(brew --prefix qt)" -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Package macOS Binary
+        run: |
+          mkdir -p dist
+          cp build/poler-edit dist/poler-edit
+          tar -czvf poler-edit-macos.tar.gz -C dist poler-edit
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: poler-edit-macos
+          path: poler-edit-macos.tar.gz

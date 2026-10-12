@@ -1,5 +1,6 @@
 #include "EngineBridge.h"
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QJsonDocument>
@@ -23,17 +24,26 @@ QString EngineBridge::enginePath()
     if (!env.isEmpty() && QFile::exists(QString::fromLocal8Bit(env))) {
         return QString::fromLocal8Bit(env);
     }
-    // 2) Суверенный пользовательский бинарник (~/.local/bin/poler-engine)
+    // 2) Рядом с исполняемым файлом редактора (портативный режим, Windows / macOS / AppImage)
+    const QString appDir = QCoreApplication::applicationDirPath();
+    for (const QString &appCand : {appDir + "/poler-engine",
+                                  appDir + "/poler-engine.exe",
+                                  appDir + "/../bin/poler-engine"}) {
+        if (QFile::exists(appCand)) {
+            return appCand;
+        }
+    }
+    // 3) Суверенный пользовательский бинарник (~/.local/bin/poler-engine)
     const QString localUserPath = QDir::homePath() + "/.local/bin/poler-engine";
     if (QFile::exists(localUserPath)) {
         return localUserPath;
     }
-    // 3) PATH
+    // 4) PATH
     const QString inPath = QStandardPaths::findExecutable("poler-engine");
     if (!inPath.isEmpty()) {
         return inPath;
     }
-    // 3) Типичные суверенные пути.
+    // 5) Типичные суверенные пути.
     for (const QString &cand : {QDir::homePath() + "/.local/bin/poler-engine",
                                 QString("/usr/local/bin/poler-engine"),
                                 QString("/usr/bin/poler-engine")}) {

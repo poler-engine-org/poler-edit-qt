@@ -162,6 +162,9 @@ void EditorView::openDoc()
             // ленивое ядро: строк ещё не знаем — индексируем в фоне,
             // вьюпорт уже можно показывать (верх файла мгновенно готов).
             m_linesTotal = 0;
+            updateScrollbars();
+            setTopLine(0);
+            requestFetch(0);
             m_indexing = true;
             m_bridge->indexDoc(m_doc, [this](const QJsonObject &r) {
                 m_indexing = false;
@@ -174,9 +177,11 @@ void EditorView::openDoc()
                 }
             });
         }
-        updateScrollbars();
-        setTopLine(0);
-        requestFetch(0);
+        if (!m_indexing) {
+            updateScrollbars();
+            setTopLine(0);
+            requestFetch(0);
+        }
         emit docOpened(this);
     });
 }
