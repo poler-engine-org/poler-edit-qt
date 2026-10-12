@@ -4,3 +4,5 @@ compile_commands.json
 *.kdev4
 .idea/
 .vscode/
+target/
+core/target/

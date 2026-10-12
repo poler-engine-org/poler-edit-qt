@@ -20,38 +20,38 @@ EngineBridge::~EngineBridge()
 QString EngineBridge::enginePath()
 {
     // 1) Явное переопределение окружением.
-    const QByteArray env = qgetenv("POLER_ENGINE");
+    const QByteArray env = qgetenv("POLER_EDIT_CORE");
     if (!env.isEmpty() && QFile::exists(QString::fromLocal8Bit(env))) {
         return QString::fromLocal8Bit(env);
     }
-    // 2) Рядом с исполняемым файлом редактора (портативный режим, Windows / macOS / AppImage)
+    // 2) Рядом с исполняемым файлом редактора (портативный режим, Windows / macOS / Linux)
     const QString appDir = QCoreApplication::applicationDirPath();
-    for (const QString &appCand : {appDir + "/poler-engine",
-                                  appDir + "/poler-engine.exe",
-                                  appDir + "/../bin/poler-engine"}) {
+    for (const QString &appCand : {appDir + "/poler-edit-core",
+                                  appDir + "/poler-edit-core.exe",
+                                  appDir + "/../bin/poler-edit-core",
+                                  appDir + "/../core/target/release/poler-edit-core"}) {
         if (QFile::exists(appCand)) {
             return appCand;
         }
     }
-    // 3) Суверенный пользовательский бинарник (~/.local/bin/poler-engine)
-    const QString localUserPath = QDir::homePath() + "/.local/bin/poler-engine";
+    // 3) Пользовательский бинарник (~/.local/bin/poler-edit-core)
+    const QString localUserPath = QDir::homePath() + "/.local/bin/poler-edit-core";
     if (QFile::exists(localUserPath)) {
         return localUserPath;
     }
     // 4) PATH
-    const QString inPath = QStandardPaths::findExecutable("poler-engine");
+    const QString inPath = QStandardPaths::findExecutable("poler-edit-core");
     if (!inPath.isEmpty()) {
         return inPath;
     }
-    // 5) Типичные суверенные пути.
-    for (const QString &cand : {QDir::homePath() + "/.local/bin/poler-engine",
-                                QString("/usr/local/bin/poler-engine"),
-                                QString("/usr/bin/poler-engine")}) {
+    // 5) Резервный системный путь
+    for (const QString &cand : {QString("/usr/local/bin/poler-edit-core"),
+                                QString("/usr/bin/poler-edit-core")}) {
         if (QFile::exists(cand)) {
             return cand;
         }
     }
-    return QString("poler-engine");
+    return QStringLiteral("poler-edit-core");
 }
 
 void EngineBridge::ensureStarted()
@@ -66,7 +66,12 @@ void EngineBridge::ensureStarted()
         connect(m_proc, &QProcess::errorOccurred, this, [this] { emit engineDied(); });
         connect(m_proc, &QProcess::finished, this, [this] { emit engineDied(); });
     }
-    m_proc->start(enginePath(), {QStringLiteral("--edit-serve")});
+    const QString bin = enginePath();
+    QStringList args;
+    if (bin.contains(QLatin1String("poler-engine"))) {
+        args << QStringLiteral("--edit-serve");
+    }
+    m_proc->start(bin, args);
 }
 
 void EngineBridge::send(const QJsonObject &obj)

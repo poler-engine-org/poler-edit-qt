@@ -19,6 +19,14 @@ jobs:
       - name: Checkout poler-edit-qt
         uses: actions/checkout@v4
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build poler-edit-core (Rust backend)
+        run: |
+          cd core
+          cargo build --release
+
       - name: Install Qt6 & CMake
         run: |
           sudo apt-get update
@@ -27,14 +35,15 @@ jobs:
       - name: Configure CMake
         run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build
+      - name: Build GUI
         run: cmake --build build
 
-      - name: Package Linux Binary
+      - name: Package Linux Bundle
         run: |
           mkdir -p dist
           cp build/poler-edit dist/poler-edit
-          tar -czvf poler-edit-linux-x86_64.tar.gz -C dist poler-edit
+          cp core/target/release/poler-edit-core dist/poler-edit-core
+          tar -czvf poler-edit-linux-x86_64.tar.gz -C dist poler-edit poler-edit-core
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -49,6 +58,14 @@ jobs:
       - name: Checkout poler-edit-qt
         uses: actions/checkout@v4
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build poler-edit-core (Rust backend)
+        run: |
+          cd core
+          cargo build --release
+
       - name: Install Qt6 via jurplel/install-qt-action
         uses: jurplel/install-qt-action@v3
         with:
@@ -61,14 +78,15 @@ jobs:
       - name: Configure CMake
         run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build
+      - name: Build GUI
         run: cmake --build build --config Release
 
-      - name: Package Windows Binary
+      - name: Package Windows Bundle
         shell: bash
         run: |
           mkdir -p dist
           cp build/Release/poler-edit.exe dist/ || cp build/poler-edit.exe dist/
+          cp core/target/release/poler-edit-core.exe dist/
           windeployqt dist/poler-edit.exe --no-translations --compiler-runtime
           cd dist && 7z a ../poler-edit-windows-x86_64.zip *
 
@@ -85,20 +103,29 @@ jobs:
       - name: Checkout poler-edit-qt
         uses: actions/checkout@v4
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build poler-edit-core (Rust backend)
+        run: |
+          cd core
+          cargo build --release
+
       - name: Install Qt6
         run: brew install qt cmake ninja
 
       - name: Configure CMake
         run: cmake -B build -S . -G Ninja -DCMAKE_PREFIX_PATH="$(brew --prefix qt)" -DCMAKE_BUILD_TYPE=Release
 
-      - name: Build
+      - name: Build GUI
         run: cmake --build build
 
-      - name: Package macOS Binary
+      - name: Package macOS Bundle
         run: |
           mkdir -p dist
           cp build/poler-edit dist/poler-edit
-          tar -czvf poler-edit-macos.tar.gz -C dist poler-edit
+          cp core/target/release/poler-edit-core dist/poler-edit-core
+          tar -czvf poler-edit-macos.tar.gz -C dist poler-edit poler-edit-core
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
