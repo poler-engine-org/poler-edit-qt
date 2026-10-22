@@ -25,7 +25,9 @@
   ```
 
 ### 🪟 Windows (x86_64)
-- **Завантажити:** [`poler-edit-windows-x86_64.zip`](https://github.com/poler-engine-org/poler-edit-qt/releases/download/v0.3.0/poler-edit-windows-x86_64.zip)
+- **Автоустановник (GUI Setup в 1 клік, рекомендовано):** [`POLER-Edit-Setup-x64.exe`](https://github.com/poler-engine-org/poler-edit-qt/releases/download/v0.3.0/POLER-Edit-Setup-x64.exe)
+- **Портативний архів (без встановлення):** [`poler-edit-windows-x86_64.zip`](https://github.com/poler-engine-org/poler-edit-qt/releases/download/v0.3.0/poler-edit-windows-x86_64.zip)
+- *Усі системні бібліотеки Qt6 та MSVC CRT (`vcruntime140*.dll`, `msvcp140*.dll`) вже вбудовані в пакет — редактор запускається одразу без чорного вікна консолі та без потреби окремо встановлювати `vc_redist.x64.exe`.*
 
 ---
 
