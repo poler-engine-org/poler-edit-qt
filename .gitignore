@@ -1,4 +1,5 @@
 build/
+core/
 .cache/
 compile_commands.json
 *.kdev4
