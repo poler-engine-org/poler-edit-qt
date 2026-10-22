@@ -102,15 +102,28 @@
             <!-- Формула ε-скролінгу -->
             <div class="mt-14 max-w-3xl mx-auto rounded-2xl math-box p-6 text-left glow-emerald">
                 <div class="flex items-center justify-between border-b border-emerald-500/20 pb-3 mb-4">
-                    <span class="text-xs font-mono text-emerald-400 uppercase tracking-wider font-bold">Математичний інваріант: Скролінг для штучного інтелекту</span>
+                    <span class="text-xs font-mono text-emerald-400 uppercase tracking-wider font-bold">Математичний інваріант: Двофазний скролінг для штучного інтелекту</span>
                     <span class="text-xs font-mono text-slate-400">core/src/search.rs</span>
                 </div>
                 <div class="code-font text-emerald-300 text-sm sm:text-base mb-3 font-semibold overflow-x-auto py-1">
                     ε = κ · (1 + ln(1 + kw)) · ∑ [ln N − ln freq_u]²
                 </div>
-                <p class="text-xs text-slate-400 leading-relaxed">
-                    <b>Чому це єдине у світі доповнення до grep:</b> grep повертає 500 000 плоских рядків шуму. Формула $\varepsilon$ аналізує вікно $\pm 256$ байт: якщо контекст повторюється (шаблонний лог), $\varepsilon \to 0$. Якщо з'являється унікальна аномалія чи збій — $\varepsilon$ злітає вгору. ШІ «скролить» 10 ГБ і фокусується лише на точках змісту.
-                </p>
+                <div class="text-xs text-slate-300 space-y-2 leading-relaxed">
+                    <p><b>Як це працює на 10 ГБ коду:</b> припустимо, ви редагуєте 10 гігабайт коду, і в ньому є одна життєво важлива функція на весь масив даних.</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        <div class="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                            <span class="text-emerald-400 font-bold block mb-1">⚡ Велика енергія (&epsilon;<sub>high</sub>)</span>
+                            Висока щільність токенів навколо функції. Вмикається, коли ШІ повинен осягнути всі взаємозв'язки, граф викликів та цілісну архітектуру на всі 10 ГБ.
+                        </div>
+                        <div class="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                            <span class="text-blue-400 font-bold block mb-1">🎯 Мала енергія (&epsilon;<sub>low</sub>)</span>
+                            Стан когнітивного спокою. Вмикається для ювелірної точкової правки конкретного рядка без збурення оточуючого масиву коду.
+                        </div>
+                    </div>
+                    <p class="pt-2 text-slate-400">
+                        <b>Ефект скролінгу для AI:</b> поєднання цих двох станів створює для штучного інтелекту динамічний градієнт — модель буквально <b>построчно перебирає та сканує 10 ГБ файл</b>, як людина скролить код коліщатком миші. Це єдине у світі повноцінне доповнення до <code class="text-emerald-400">grep</code>.
+                    </p>
+                </div>
             </div>
         </div>
     </section>
@@ -172,29 +185,30 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="max-w-3xl mx-auto text-center mb-16">
                 <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-mono font-semibold mb-3">Search Engine v2</h2>
-                <p class="text-3xl sm:text-4xl font-extrabold text-white">Доповнення до grep, яке розуміє значимість</p>
+                <p class="text-3xl sm:text-4xl font-extrabold text-white">Доповнення до grep: фізика скролінгу для AI</p>
+                <p class="text-slate-400 text-sm mt-3">Як модель знаходить одну ключову функцію на 10 ГБ коду, розуміє всю архітектуру та виконує точкову правку.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="p-8 rounded-2xl bg-dark-card border border-dark-border">
                     <div class="text-emerald-400 font-mono text-2xl font-bold mb-4">01</div>
-                    <h3 class="text-lg font-bold text-white mb-2">Пріоритет в'юпорта</h3>
+                    <h3 class="text-lg font-bold text-white mb-2">Велика енергія: Карта зв'язків</h3>
                     <p class="text-slate-400 text-sm leading-relaxed">
-                        Пошук не змушує чекати сканування всіх 10 ГБ. Спочатку підсвічуються збіги у видимому вікні дисплея (за 1 мілісекунду), а повний скан іде асинхронно у фоні через SIMD Rayon.
+                        Коли в 10 ГБ коду є лише одна цільова функція, висока щільність та рідкість токенів навколо неї породжують пік великої енергії. Це дає змогу AI побудувати глобальний граф взаємозв'язків, викликів та залежностей без переповнення контекстного вікна.
                     </p>
                 </div>
                 <div class="p-8 rounded-2xl bg-dark-card border border-dark-border">
-                    <div class="text-emerald-400 font-mono text-2xl font-bold mb-4">02</div>
-                    <h3 class="text-lg font-bold text-white mb-2">ε — Енергія значимості</h3>
+                    <div class="text-blue-400 font-mono text-2xl font-bold mb-4">02</div>
+                    <h3 class="text-lg font-bold text-white mb-2">Мала енергія: Точкова правка</h3>
                     <p class="text-slate-400 text-sm leading-relaxed">
-                        Обчислення рідкості токенів у вікні ±256 байт навколо збігу. Відсікає однаковий шаблонний шум логів і піднімає вгору нетипові інциденти, паніки ядра та критичні події.
+                        Коли архітектуру усвідомлено і потрібна локальна правка, система переходить у стан малої енергії (когнітивний спокій). Завдяки Piece-Table точкова модифікація конкретного рядка виконується миттєво без перезапису 10 ГБ на диску.
                     </p>
                 </div>
                 <div class="p-8 rounded-2xl bg-dark-card border border-dark-border">
-                    <div class="text-emerald-400 font-mono text-2xl font-bold mb-4">03</div>
-                    <h3 class="text-lg font-bold text-white mb-2">R(t) — Темпоральний резонанс</h3>
+                    <div class="text-teal-300 font-mono text-2xl font-bold mb-4">03</div>
+                    <h3 class="text-lg font-bold text-white mb-2">Ефект скролінгу: Построковий хід</h3>
                     <p class="text-slate-400 text-sm leading-relaxed">
-                        IIR-пам'ять ланцюжка збігів: $R_t = \varepsilon_t + \rho R_{t-1}$. Зв'язує розрізнені рядки в єдиний смисловий слід, показуючи AI та оператору розвиток системної події в часі.
+                        Суміщення великої енергії (охоплення зв'язків) та малої енергії (хірургічна правка) створює для штучного інтелекту <b>ефект скролінгу</b>: AI буквально построчно перебирає та сканує масив файлу, рухаючись по силових лініях змісту.
                     </p>
                 </div>
             </div>
