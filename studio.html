@@ -728,6 +728,79 @@
         </div>
     </section>
 
+    <!-- Section 3.5: Scripting Language + Sovereign Computation Server -->
+    <section id="script-server" style="border-bottom: 1px solid var(--border); background: radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.06), transparent 55%);">
+        <div class="container">
+            <div class="sec-header">
+                <span class="sec-eyebrow mono">Скриптовый Язык + Сервер Вычислений</span>
+                <h2 class="sec-title">Замена зоопарка тяжёлых библиотек единой связкой <code>.poler</code> Script + <code>poler-engine --mcp-http</code></h2>
+                <p class="sec-desc">
+                    Вместо установки гигабайтов разрозненных C++/Python-пакетов (NumPy, SciPy, Qiskit, PySCF, NetworkX, Torch) любой лёгкий клиент, скрипт или GUI подключается к резидентному серверу <code>poler-engine</code> (~20 МБ RAM) или исполняет декларативные <code>.poler</code>-правила напрямую.
+                </p>
+            </div>
+
+            <div class="grid-2" style="margin-bottom: 28px;">
+                <div class="card card-highlight">
+                    <div>
+                        <div class="card-head">
+                            <span class="card-badge mono">DSL &amp; SCRIPTGENERATOR (v0.48+)</span>
+                            <span class="mono" style="color: var(--emerald);">src/calc/scriptgen.rs</span>
+                        </div>
+                        <h3>1. Собственный скриптовый язык и генератор законов <code>.poler</code></h3>
+                        <p>
+                            Движок уже содержит встроенный интерпретатор конвейеров и автогенератор правил по законам физики (<code>calc script &lt;law&gt;</code>): формулы с размерностями СИ-2019/CODATA-2022, матричные цепочки, дифференциальные уравнения и тритные операции записываются в компактный текстовый сценарий.
+                        </p>
+                        <ul class="card-list mono">
+                            <li>Прямой доступ из скрипта сразу ко всем 6 слоям: <code>schrodinger()</code> → <code>eigen_sturm()</code> → <code>trit_pack5()</code> → <code>chem_rhf()</code></li>
+                            <li>Строгий контроль физических единиц (метры, секунды, эВ, Хартри, Кл) на каждом шаге скрипта</li>
+                            <li>Автономная генерация <code>.poler</code>-правил самим движком под задачу без участия Python</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div>
+                        <div class="card-head">
+                            <span class="card-badge mono">COMPUTE SERVER (JSON-RPC 2.0 / HTTP)</span>
+                            <span class="mono" style="color: var(--cyan);">src/mcp_http.rs · 37 Tools</span>
+                        </div>
+                        <h3>2. Резидентный Вычислительный Сервер вместо внешних библиотек</h3>
+                        <p>
+                            Запущенный в режиме <code>poler-engine --mcp-http 127.0.0.1:8765</code> (или <code>--mcp</code> / <code>--edit-serve</code>), монолит держит в горячей памяти L3-кэша тритные кристаллы <code>.t5c</code>, коннектом FlyWire (50 млн синапсов в 10 МБ), квантовые состояния и JIT-скомпилированные ядра.
+                        </p>
+                        <ul class="card-list mono">
+                            <li><b>37 готовых RPC-инструментов:</b> <code>poler_calc</code>, <code>poler_quantum</code>, <code>poler_jit</code>, <code>poler_scivoice</code>, <code>poler_fly_*</code>, <code>poler_ssn_*</code>, <code>poler_triune_*</code></li>
+                            <li>Любое приложение (C++/Qt6 GUI, веб-интерфейс, микросервис, игровой движок) шлёт JSON-запрос и за микросекунды получает точный расчёт</li>
+                            <li><b>Ноль внешних зависимостей:</b> один исполняемый файл <code>poler-engine.exe</code> заменяет 5+ ГБ научных пакетов</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="terminal-box">
+                <div class="terminal-bar">
+                    <span class="dot dot-r"></span>
+                    <span class="dot dot-y"></span>
+                    <span class="dot dot-g"></span>
+                    <span class="terminal-title mono">Связка в действии: .poler-скрипт + HTTP/JSON-RPC Вычислительный Сервер (замена SciPy + Qiskit + PySCF)</span>
+                </div>
+                <div class="terminal-body mono">
+                    <div><span class="t-comment"># 1. Запуск резидентного вычислительного сервера на локальном порту (держит матрицы, графы и JIT-ядра в памяти):</span></div>
+                    <div><span class="t-prompt">$</span> <span class="t-cmd">poler-engine.exe --mcp-http 127.0.0.1:8765 --mcp-token sovereign-poler-key-2026</span></div>
+                    <div><span class="t-out">poler-mcp-http: слушаю http://127.0.0.1:8765 (37 вычислительных ядер активно: calc, quantum, jit, flywire, eri, triune)</span></div>
+                    <br>
+                    <div><span class="t-comment"># 2. Любая программа или GUI вызывает квантовую эволюцию, спектр Штурма и RHF-химию одним запросом без внешних библиотек:</span></div>
+                    <div><span class="t-prompt">POST /mcp</span> <span class="t-cmd">{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"poler_calc","arguments":{"expr":"eigen_sturm([2,-1,0;-1,2,-1;0,-1,2])"}}}</span></div>
+                    <div><span class="t-val">→ {"spectrum": [0.585786437626905, 2.0, 3.414213562373095], "method": "Exact Sturm Bisection + CORDIC", "latency_us": 42}</span></div>
+                    <br>
+                    <div><span class="t-comment"># 3. Автогенерация и исполнение физического .poler-скрипта (Кеплер + Шварцшильд + квантовый ротор):</span></div>
+                    <div><span class="t-prompt">$</span> <span class="t-cmd">poler-engine.exe --exec "calc script kepler3 a=149.6e9_m M1=M_sun M2=M_earth"</span></div>
+                    <div><span class="t-val">→ Закон: Третий закон Кеплера | Формула: 2*pi*sqrt(a^3 / (G*(M1+M2))) | Результат: 3.1558149e7 s (365.256 сут, СИ-2019/IAU)</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Section 4: Ecosystem Links -->
     <section id="ecosystem">
         <div class="container">
