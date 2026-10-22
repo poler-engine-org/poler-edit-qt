@@ -1,0 +1,48 @@
+name: Verify Release Portal
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Site, offer & release assets
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout portal
+        uses: actions/checkout@v4
+
+      - name: Verify portal files
+        run: |
+          set -euo pipefail
+          test -f docs/index.html
+          test -f docs/oferta.html
+          test -f LICENSE.md
+          grep -qi 'oferta' docs/index.html
+          grep -q 'РНОКПП' docs/oferta.html
+          echo "Portal structure OK"
+
+      - name: Verify live site (GitHub Pages)
+        run: |
+          set -euo pipefail
+          curl -fsSI --max-time 30 "https://poler-engine-org.github.io/poler-edit-qt/" >/dev/null
+          curl -fsSI --max-time 30 "https://poler-engine-org.github.io/poler-edit-qt/oferta.html" >/dev/null
+          echo "GitHub Pages live OK"
+
+      - name: Verify latest release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          latest_tag="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq '.tag_name')"
+          echo "Latest release: ${latest_tag}"
+          gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq '.assets[].name' | tee assets.txt
+          grep -q 'poler-edit-linux-x86_64' assets.txt
+          grep -q 'poler-edit-windows-x86_64' assets.txt
+          echo "Release assets OK"
