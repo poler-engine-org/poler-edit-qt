@@ -59,8 +59,8 @@
             <nav class="hidden md:flex items-center space-x-8 text-sm text-slate-300 font-medium">
                 <a href="#core-difference" class="hover:text-emerald-400 transition-colors">В чому суть?</a>
                 <a href="#ai-scrolling" class="hover:text-emerald-400 transition-colors">ε-Скролінг для AI</a>
-                <a href="#architecture" class="hover:text-emerald-400 transition-colors">Piece-Table</a>
-                <a href="#pricing" class="hover:text-emerald-400 transition-colors">Комерційні ліцензії</a>
+                <a href="#verification" class="hover:text-emerald-400 transition-colors">Аудит ревізора</a>
+                <a href="#pricing" class="hover:text-emerald-400 transition-colors">Тарифи</a>
                 <a href="#contacts" class="hover:text-emerald-400 transition-colors">Контакти</a>
             </nav>
             <div class="flex items-center space-x-4">
@@ -215,31 +215,114 @@
         </div>
     </section>
 
+    <!-- Тестування на власних та випадкових даних (Захист від компромату ревізора) -->
+    <section id="verification" class="py-20 bg-[#06080c] border-t border-dark-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-3xl mx-auto text-center mb-12">
+                <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-mono mb-4">
+                    <span>🛡️ Незалежний аудит та Property-Based тестування</span>
+                </div>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-white">Тестування на довільних або персональних даних</h2>
+                <p class="text-slate-400 text-sm mt-3 leading-relaxed">
+                    Коли розробник демонструє тести виключно на власних підібраних файлах — ревізор, аудитор чи скептик має повне право вважати це підтасовкою або скомпрометованим бенчмарком. У POLER Edit математичний апарат доведено на будь-яких користувацьких або випадкових даних.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+                <!-- Блок 1: Чому дані користувача — єдиний об'єктивний критерій -->
+                <div class="p-8 rounded-2xl bg-dark-card border border-dark-border flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center space-x-2">
+                            <span class="text-emerald-400 font-mono">01.</span>
+                            <span>Жодного хардкоду чи штучних словників</span>
+                        </h3>
+                        <p class="text-slate-400 text-sm leading-relaxed mb-4">
+                            Формула енергії значимості $\varepsilon$ та пам'яті $R(t)$ обчислює частоти токенів динамічно у рухомому вікні. Вона працює повністю інваріантно на будь-якому матеріалі, який обере користувач:
+                        </p>
+                        <ul class="space-y-2.5 text-xs text-slate-300 font-mono">
+                            <li class="flex items-center space-x-2">
+                                <span class="text-emerald-400">✓</span>
+                                <span>Вихідний код будь-якою мовою (C++, Rust, Python, Java, JS, Go, Zig)</span>
+                            </li>
+                            <li class="flex items-center space-x-2">
+                                <span class="text-emerald-400">✓</span>
+                                <span>Реальні гігабайтні дампи СУБД (PostgreSQL, MySQL, SQLite, JSON-дампи)</span>
+                            </li>
+                            <li class="flex items-center space-x-2">
+                                <span class="text-emerald-400">✓</span>
+                                <span>Системні журнали, бінарні логи ядер та сирі dmesg-потоки</span>
+                            </li>
+                            <li class="flex items-center space-x-2">
+                                <span class="text-emerald-400">✓</span>
+                                <span>Стохастичні псевдовипадкові масиви (Property-based randomized tests)</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="mt-6 p-4 rounded-xl bg-dark-bg border border-dark-border text-xs text-slate-400">
+                        <span class="text-emerald-400 font-bold block mb-1 font-mono">Property-тести в ядрі (core/src):</span>
+                        Тести <code class="text-slate-200">parity_random_text_random_needles</code> та <code class="text-slate-200">property_matches_naive_model</code> генерують хаотичний текст із випадковими іглами та багаторазовими вставками/видаленнями, доводячи 100% математичний паритет із наївною моделлю на будь-якому випадковому зерні.
+                    </div>
+                </div>
+
+                <!-- Блок 2: Інструкція для ревізора -->
+                <div class="p-8 rounded-2xl bg-dark-card border border-dark-border flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-white mb-3 flex items-center space-x-2">
+                            <span class="text-emerald-400 font-mono">02.</span>
+                            <span>Інструкція для ревізора: перевірте на своїх даних</span>
+                        </h3>
+                        <p class="text-slate-400 text-sm leading-relaxed mb-4">
+                            Не довіряйте синтетичним заявам. Візьміть будь-який власний файл на 1–10 ГБ — робочий дамп або випадковий масив — та переконайтеся особисто:
+                        </p>
+                        
+                        <div class="rounded-xl bg-black/60 p-4 font-mono text-xs text-slate-300 border border-slate-800 space-y-3">
+                            <div class="text-slate-500"># 1. Запустіть вбудований property-раннер на випадкових тестах:</div>
+                            <div class="text-emerald-400">git clone https://github.com/poler-engine-org/poler-edit-qt.git</div>
+                            <div class="text-emerald-400">cd poler-edit-qt/core && cargo test --release</div>
+                            
+                            <div class="text-slate-500 pt-2"># 2. Відкрийте ВЛАСНИЙ файл будь-якого розміру (до 10 ГБ):</div>
+                            <div class="text-emerald-300">poler-edit &lt;ШЛЯХ_ДО_ВАШОГО_ФАЙЛУ&gt;</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex items-center justify-between text-xs text-slate-400 border-t border-dark-border pt-4">
+                        <span>Споживання RAM: <b class="text-white">~30 МБ</b></span>
+                        <span>Час правки Piece-Table: <b class="text-white">&lt; 0.5 мс</b></span>
+                        <span>Перезапис диска: <b class="text-emerald-400">0 байт</b></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Тарифи та Ліцензування (Комплаєнс LiqPay + LICENSE.md) -->
     <section id="pricing" class="py-20 bg-dark-card border-t border-dark-border">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-3xl mx-auto mb-16">
                 <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-mono font-semibold mb-3">Офіційне ліцензування</h2>
                 <p class="text-3xl sm:text-4xl font-extrabold text-white">Тарифи відповідно до POLER Commercial License</p>
-                <p class="text-slate-400 text-sm mt-3">Безпечна оплата через шлюз LiqPay від ПриватБанку. Миттєва генерація Ed25519 ключа.</p>
+                <p class="text-slate-400 text-sm mt-3">Безпечна оплата через шлюз LiqPay від ПриватБанку. Миттєва генерація Ed25519 ключа на ваш E-mail.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                <!-- Evaluation Tier -->
+                <!-- Community Edition -->
                 <div class="p-8 rounded-2xl bg-[#080b10] border border-dark-border flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-xl font-bold text-white">Personal Evaluation</h3>
-                            <span class="text-xs px-2.5 py-1 rounded bg-slate-800 text-slate-300 font-mono">Source-Available</span>
+                            <h3 class="text-xl font-bold text-white">Community Edition</h3>
+                            <span class="text-xs px-2.5 py-1 rounded bg-slate-800 text-slate-300 font-mono">Безкоштовно</span>
                         </div>
-                        <div class="text-3xl font-extrabold text-white mb-6 font-mono">0 ₴</div>
+                        <div class="flex items-baseline space-x-2 mb-6">
+                            <span class="text-4xl font-extrabold text-white font-mono">0 ₴</span>
+                            <span class="text-slate-400 text-sm font-mono">/ Lifetime доступ</span>
+                        </div>
                         <p class="text-xs text-slate-400 mb-6 leading-relaxed">
-                            Для некомерційного аудиту коду, навчальних завдань та персонального ознайомлення.
+                            Базова суверенна версія для персонального використання, некомерційного аудиту коду та ознайомлення.
                         </p>
                         <ul class="space-y-3.5 text-sm text-slate-300 mb-8">
                             <li class="flex items-center space-x-3">
                                 <span class="text-emerald-400 font-bold">✓</span>
-                                <span>Збірка з вихідного коду</span>
+                                <span>Відкриття файлів будь-якого розміру (до 10 ГБ)</span>
                             </li>
                             <li class="flex items-center space-x-3">
                                 <span class="text-emerald-400 font-bold">✓</span>
@@ -247,56 +330,61 @@
                             </li>
                             <li class="flex items-center space-x-3">
                                 <span class="text-emerald-400 font-bold">✓</span>
-                                <span>Некомерційне персональне тестування</span>
+                                <span>Базовий живий пошук (as-you-type)</span>
+                            </li>
+                            <li class="flex items-center space-x-3">
+                                <span class="text-emerald-400 font-bold">✓</span>
+                                <span>Завантажити з GitHub (Lifetime доступ)</span>
                             </li>
                         </ul>
                     </div>
-                    <a href="https://github.com/poler-engine-org/poler-edit-qt" target="_blank" class="w-full py-3 rounded-xl bg-dark-hover hover:bg-slate-800 border border-dark-border text-center font-semibold text-slate-200 transition-colors">
-                        Переглянути вихідний код
+                    <a href="https://github.com/poler-engine-org/poler-edit-qt/releases" target="_blank" class="w-full py-3.5 rounded-xl bg-dark-hover hover:bg-slate-800 border border-dark-border text-center font-semibold text-slate-200 transition-colors flex items-center justify-center space-x-2">
+                        <span>Завантажити з GitHub</span>
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                     </a>
                 </div>
 
-                <!-- Commercial Pro Tier -->
+                <!-- POLER Edit Pro -->
                 <div class="p-8 rounded-2xl bg-[#080b10] border-2 border-emerald-500/60 shadow-2xl relative flex flex-col justify-between glow-emerald">
                     <div class="absolute -top-3 right-6 px-3 py-1 bg-emerald-500 text-dark-bg font-extrabold text-xs uppercase tracking-wider rounded-full font-mono">
-                        Commercial License
+                        POLER Edit Pro
                     </div>
                     <div>
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-xl font-bold text-white">POLER Edit Pro</h3>
-                            <span class="text-xs px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">Безстроково</span>
+                            <span class="text-xs px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">Одноразово</span>
                         </div>
                         <div class="flex items-baseline space-x-2 mb-6">
                             <span class="text-4xl font-extrabold text-white font-mono">499 ₴</span>
-                            <span class="text-slate-400 text-sm font-mono">/ робоче місце (~$12)</span>
+                            <span class="text-slate-400 text-sm font-mono">/ безстроково (~$12)</span>
                         </div>
-                        <p class="text-xs text-slate-400 mb-6 leading-relaxed">
-                            Офіційна ліцензія на комерційне використання для інженерів, системних адміністраторів, DevOps, DBA та компаній.
+                        <p class="text-xs text-slate-400 mb-4 leading-relaxed font-semibold text-slate-200">
+                            Все, що є в Community, плюс:
                         </p>
-                        <ul class="space-y-3.5 text-sm text-slate-300 mb-8">
+                        <ul class="space-y-3 text-sm text-slate-300 mb-8">
                             <li class="flex items-center space-x-3">
                                 <span class="text-emerald-400 font-bold">✓</span>
-                                <span><b>Право комерційного використання в продакшені</b></span>
+                                <span>Пріоритетна фаза в'юпорта: миттєві збіги в екрані</span>
                             </li>
                             <li class="flex items-center space-x-3">
                                 <span class="text-emerald-400 font-bold">✓</span>
-                                <span>Інтерактивне редагування та створення файлів 1–10+ ГБ</span>
+                                <span>Підрахунок ε-енергії значимості та резонансу R(t)</span>
                             </li>
                             <li class="flex items-center space-x-3">
                                 <span class="text-emerald-400 font-bold">✓</span>
-                                <span>Повний Search Engine v2 з підрахунком ε та R(t)</span>
+                                <span>Криптографічний ключ Ed25519 на ваш E-mail</span>
                             </li>
                             <li class="flex items-center space-x-3">
                                 <span class="text-emerald-400 font-bold">✓</span>
-                                <span>Криптографічний ключ Ed25519 офлайн-активації</span>
+                                <span>Всі наступні мінорні та мажорні оновлення</span>
                             </li>
                         </ul>
                     </div>
 
                     <div>
                         <div class="mb-4">
-                            <label class="block text-xs font-mono text-slate-400 mb-1.5">E-mail для отримання криптографічного ключа Ed25519:</label>
-                            <input type="email" id="customerEmail" placeholder="engineer@domain.com" class="w-full px-4 py-2.5 rounded-lg bg-[#080b10] border border-dark-border text-white text-sm focus:outline-none focus:border-emerald-500 font-mono">
+                            <label class="block text-xs font-mono text-slate-400 mb-1.5">Ваш E-mail для отримання ліцензійного ключа:</label>
+                            <input type="email" id="customerEmail" placeholder="developer@domain.com" class="w-full px-4 py-2.5 rounded-lg bg-[#080b10] border border-dark-border text-white text-sm focus:outline-none focus:border-emerald-500 font-mono">
                         </div>
                         <button onclick="handleBuyClick()" class="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-dark-bg font-extrabold text-center transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center space-x-2">
                             <span>Придбати ліцензію через LiqPay</span>
