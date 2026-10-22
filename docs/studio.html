@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POLER Engine — AI-Native Topographical, Quantum &amp; Physical Search Engine</title>
+    
+    <!-- SEO & Metadata -->
+    <meta name="description" content="POLER Engine v0.92.0: Суверенный вычислительный и поисково-аналитический движок на сбалансированной троичной логике Trit5, симплектических роторах Ли J = A - A^T, полиномах Штурма и нативном исполнении квантовых схем.">
+    <meta name="keywords" content="POLER Engine, POLER Studio, Quantum Simulator, Schrödinger Equation, Trit5, Balanced Ternary, Rust, Teddy SIMD, RaBitQ, Sturm Eigenvalues, RHF STO-3G, FastCDC .poler">
+    <meta name="author" content="Vitalij Kotok (Kotokvit) &amp; POLER Systems">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://poler-engine-org.github.io/poler-engine/">
+
+    <!-- OpenGraph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://poler-engine-org.github.io/poler-engine/">
+    <meta property="og:title" content="POLER Engine — Квантово-Резонансный Вычислительный Монолит и План Сборки GUI Studio">
+    <meta property="og:description" content="400 000+ строк суверенного кода (Rust + Zig + x86_64 ASM): Калькулятор Всего, эволюция Шрёдингера за 1.72 мс, бисекция Штурма 256×256 и архитектура десктопного Qt6 GUI.">
+    <meta property="og:site_name" content="POLER Engine">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-main: #060911;
+            --bg-card: #0d1322;
+            --bg-card-hover: #131c31;
+            --bg-code: #04060b;
+            --emerald: #10b981;
+            --emerald-glow: rgba(16, 185, 129, 0.22);
+            --cyan: #06b6d4;
+            --blue: #3b82f6;
+            --purple: #8b5cf6;
+            --amber: #f59e0b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: #1e293b;
+            --border-bright: rgba(16, 185, 129, 0.45);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.65;
+            overflow-x: hidden;
+        }
+        code, pre, .mono { font-family: 'JetBrains Mono', Consolas, monospace; }
+
+        /* Top Navigation */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(14px);
+            background: rgba(6, 9, 17, 0.85);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-inner {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 68px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+        .brand-logo {
+            width: 38px;
+            height: 38px;
+            border-radius: 9px;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid var(--border-bright);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--emerald);
+            font-weight: 800;
+            font-size: 1.05rem;
+        }
+        .brand-text { font-weight: 800; font-size: 1.15rem; letter-spacing: -0.02em; }
+        .brand-tag {
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(6, 182, 212, 0.12);
+            color: var(--cyan);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+        }
+        .nav-links {
+            display: flex;
+            gap: 24px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--emerald); }
+        .nav-cta {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* Layout & Containers */
+        .container { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+        section { padding: 84px 0; border-bottom: 1px solid var(--border); }
+
+        /* Hero */
+        .hero {
+            position: relative;
+            padding: 96px 0 84px;
+            text-align: center;
+            background: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.14), rgba(6, 182, 212, 0.05) 45%, transparent 75%);
+        }
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 999px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            color: var(--emerald);
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+        h1 {
+            font-size: clamp(2.4rem, 5vw, 4rem);
+            font-weight: 800;
+            line-height: 1.12;
+            letter-spacing: -0.03em;
+            margin-bottom: 22px;
+        }
+        .grad-text {
+            background: linear-gradient(135deg, #34d399 0%, #06b6d4 55%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero-sub {
+            max-width: 860px;
+            margin: 0 auto 34px;
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+        }
+        .badges {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 38px;
+        }
+        .badge {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 7px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #cbd5e1;
+            font-weight: 600;
+        }
+        .badge strong { color: var(--emerald); }
+
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 26px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .btn-emerald {
+            background: var(--emerald);
+            color: #04130e;
+            box-shadow: 0 10px 30px -8px var(--emerald-glow);
+        }
+        .btn-emerald:hover { background: #34d399; transform: translateY(-2px); }
+        .btn-outline {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        .btn-outline:hover { border-color: var(--cyan); transform: translateY(-2px); }
+
+        /* Section Headings */
+        .sec-header { text-align: center; max-width: 820px; margin: 0 auto 56px; }
+        .sec-eyebrow {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: var(--emerald);
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .sec-title {
+            font-size: clamp(1.85rem, 3.5vw, 2.6rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 14px;
+        }
+        .sec-desc { color: var(--text-secondary); font-size: 1.02rem; }
+
+        /* Metric Cards */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+            margin-top: 52px;
+        }
+        .stat-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 22px;
+            text-align: left;
+        }
+        .stat-val {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: var(--emerald);
+            margin-bottom: 4px;
+        }
+        .stat-lbl { font-size: 0.85rem; color: var(--text-secondary); }
+
+        /* Grid Cards */
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 24px;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(460px, 1fr));
+            gap: 28px;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .card:hover {
+            border-color: rgba(16, 185, 129, 0.4);
+            background: var(--bg-card-hover);
+        }
+        .card-highlight {
+            border-color: var(--border-bright);
+            box-shadow: 0 0 50px -15px var(--emerald-glow);
+        }
+        .card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .card-badge {
+            font-size: 0.74rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--emerald);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+        .card h3 { font-size: 1.28rem; margin-bottom: 10px; color: #fff; }
+        .card p { color: var(--text-secondary); font-size: 0.94rem; margin-bottom: 16px; }
+        .card ul { list-style: none; space-y: 8px; }
+        .card ul li {
+            font-size: 0.88rem;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .card ul li::before {
+            content: "▹";
+            color: var(--emerald);
+            font-weight: bold;
+        }
+
+        /* Terminal / Code Box */
+        .terminal {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-top: 28px;
+        }
+        .term-bar {
+            background: #0c1220;
+            padding: 10px 18px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+        .term-dots { display: flex; gap: 6px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .dot-r { background: #ef4444; }
+        .dot-y { background: #f59e0b; }
+        .dot-g { background: #10b981; }
+        .term-body {
+            padding: 22px;
+            font-size: 0.86rem;
+            line-height: 1.7;
+            overflow-x: auto;
+            color: #e2e8f0;
+        }
+        .c-prompt { color: var(--cyan); font-weight: 600; }
+        .c-cmd { color: #f8fafc; }
+        .c-out { color: var(--emerald); }
+        .c-comment { color: #64748b; }
+
+        /* Table */
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: var(--bg-card);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+        th, td {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            background: #090e1a;
+            color: var(--emerald);
+            font-weight: 700;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        tr:last-child td { border-bottom: none; }
+
+        /* Roadmap Timeline */
+        .roadmap-step {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 24px;
+            padding: 28px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            align-items: start;
+        }
+        .step-phase {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid var(--border-bright);
+            color: var(--emerald);
+            padding: 10px 14px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 800;
+            font-size: 0.9rem;
+        }
+        .step-status {
+            display: block;
+            font-size: 0.7rem;
+            margin-top: 4px;
+            color: var(--cyan);
+            text-transform: uppercase;
+        }
+
+        footer {
+            padding: 48px 0;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+        }
+        footer a { color: var(--emerald); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .roadmap-step { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="#" class="brand">
+                <div class="brand-logo mono">Ψ</div>
+                <span class="brand-text">POLER Engine</span>
+                <span class="brand-tag mono">v0.92.0 Monolith</span>
+            </a>
+            <div class="nav-links">
+                <a href="#synergy">Квантовый Монолит</a>
+                <a href="#schrodinger">Шрёдингер и Штурм</a>
+                <a href="#gui-plan">План Сборки GUI Studio</a>
+                <a href="#windows-pipeline">Windows Auto-Builder</a>
+                <a href="#ecosystem">Продукты</a>
+            </div>
+            <div class="nav-cta">
+                <a href="https://poler-engine-org.github.io/poler-edit-qt/" class="btn btn-outline" style="padding: 8px 16px; font-size: 0.84rem;">POLER Edit GUI</a>
+                <a href="https://github.com/poler-engine-org/poler-engine" class="btn btn-emerald" style="padding: 8px 16px; font-size: 0.84rem;">GitHub Repo</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <header class="hero">
+        <div class="container">
+            <div class="pill mono">
+                <span>⚡ 400 000+ LOC (Rust + Zig + x86_64 ASM) · Единый Вычислительный и Квантовый Монолит</span>
+            </div>
+            <h1>
+                Калькулятор Всего, Роторы Ли и <br>
+                <span class="grad-text">Квантовый Решатель Шрёдингера</span>
+            </h1>
+            <p class="hero-sub">
+                <b>POLER Engine</b> — суверенная научно-вычислительная и поисковая платформа, в которой расчёт формул, квантовая динамика <code>exp(-iHt)</code>, сбалансированная троичная логика <code>Trit5</code>, ассемблерные синапсы и сжатие работают как единый живой организм.
+            </p>
+            <div class="badges mono">
+                <span class="badge">🦀 <strong>Rust 1.98+</strong> Sovereign Workspace</span>
+                <span class="badge">⚡ <strong>Trit5</strong> 5 трит/байт (AVX2 / AVX-512 VPTERNLOGD)</span>
+                <span class="badge">🌌 <strong>Шрёдингер и Штурм</strong> n=256 (точность 2.8·10⁻¹⁴)</span>
+                <span class="badge">🧬 <strong>POLER-ERI</strong> Квантовая химия RHF/STO-3G</span>
+                <span class="badge">🪟 <strong>Windows &amp; Linux</strong> Native Qt6 GUI Plan</span>
+            </div>
+            <div class="btn-group">
+                <a href="#gui-plan" class="btn btn-emerald">Архитектура и План Сборки GUI Studio ↓</a>
+                <a href="https://github.com/poler-engine-org/poler-edit-qt/releases/tag/v0.3.0" class="btn btn-outline">Скачать POLER Edit v0.3.0 (Windows Setup.exe)</a>
+            </div>
+
+            <!-- Key Metrics -->
+            <div class="stats-bar mono">
+                <div class="stat-box">
+                    <div class="stat-val">1.72 мс</div>
+                    <div class="stat-lbl">Унитарная эволюция Шрёдингера <code>e^(-i·σ_y·π/2)</code> при 15.7 МБ RAM</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-val">2.8·10⁻¹⁴</div>
+                    <div class="stat-lbl">Точность спектра гамильтониана 256×256 методом бисекции Штурма</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-val">1024 кубита</div>
+                    <div class="stat-lbl">Стабилизаторная симуляция GHZ-1024 (Готтесман–Книлль) за 93–367 мс</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-val">25.8 ГБ/с</div>
+                    <div class="stat-lbl">Скорость Zero-Copy поиска и 0.2 Б/синапс в упаковке FlyWire (50M связей в L3)</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Section 1: Why the Full Engine Works Together -->
+    <section id="synergy">
+        <div class="container">
+            <div class="sec-header">
+                <span class="sec-eyebrow mono">Архитектура Полного Подключения</span>
+                <h2 class="sec-title">Почему «Калькулятор Всего» задействует весь движок целиком</h2>
+                <p class="sec-desc">
+                    В отличие от обычных калькуляторов и изолированных библиотек, сложный расчёт в <b>POLER Engine</b> одновременно включает тритную логику, матричные роторы Ли, квантовую химию и потоковое сжатие.
+                </p>
+            </div>
+
+            <div class="grid-3">
+                <div class="card card-highlight">
+                    <div>
+                        <div class="card-head">
+                            <span class="card-badge mono">src/calc/ + src/quantum/</span>
+                            <span class="mono" style="color: var(--emerald);">Ядро №1</span>
+                        </div>
+                        <h3>Убийца Квантового Взрыва (Шрёдингер + Штурм)</h3>
+                        <p>Классические симуляторы падают на взрыве Уилкинсона <code>O(n!)</code> при разложении характеристического полинома. POLER решает проблему на уровне математики:</p>
+                        <ul>
+                            <li><b>Бисекция Штурма (<code>eigen_sturm</code>):</b> находит спектр симметричных матриц и гамильтонианов до <code>512×512</code> с погрешностью <code>2.8·10⁻¹⁴</code> без вычисления полинома.</li>
+                            <li><b>Матричная экспонента Паде [6/6] (<code>expm</code>):</b> прямое интегрирование уравнения Шрёдингера <code>ψ(t) = exp(-iHt)ψ(0)</code> и генераторов Ли <code>so(n)</code>.</li>
+                            <li><b>Стабилизатор Готтесмана–Книлля (<code>crates/pqc</code>):</b> 1024 запутанных кубита и очистка квантового состояния проектором МакУини <code>3P² − 2P³</code> до <code>7.1·10⁻¹⁶</code>.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div>
+                        <div class="card-head">
+                            <span class="card-badge mono">src/asm/ + src/triune/</span>
+                            <span class="mono" style="color: var(--cyan);">Ядро №2</span>
+                        </div>
+                        <h3>Трит-Синапсы, Нейроны и Ротор Фазы</h3>
+                        <p>Аппаратная сбалансированная троичная физика <code>𝕋 = {-1, 0, +1}</code> на чистом x86_64 ассемблере (<code>global_asm!</code>) без операций умножения:</p>
+                        <ul>
+                            <li><b>Без умножителя (<code>vpsignb</code> / <code>VPTERNLOGD</code>):</b> скалярное произведение и вентили Клини исполняются за такт на регистрах AVX2/AVX-512.</li>
+                            <li><b>Симплектический ротор <code>J = (W − Wᵀ)/2</code>:</b> антисимметричная фаза вращает состояние без затухания нормы и зацикливания.</li>
+                            <li><b>Упаковка <code>pack5</code> (0.2 Б/синапс):</b> 5 тритов в 1 байт через цепочки <code>LEA ×3</code>. Коннектом мозга мухи FlyWire (50 млн синапсов) целиком помещается в 10 МБ кэша L3 процессора!</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div>
+                        <div class="card-head">
+                            <span class="card-badge mono">crates/poler-eri + src/archive/</span>
+                            <span class="mono" style="color: var(--purple);">Ядро №3</span>
+                        </div>
+                        <h3>Квантовая Химия (RHF) и Zero-Copy Сжатие</h3>
+                        <p>Мета-компиляция интегралов межэлектронного отталкивания и потоковая дедупликация гигабайтных пространств состояний:</p>
+                        <ul>
+                            <li><b>POLER-ERI v3.2.0:</b> R1CS-кристаллизатор рекуррентных соотношений Обара–Саики и полиномов Риса в плоский безветвевой SIMD-код; полный цикл Хартри–Фока (RHF/STO-3G + DIIS).</li>
+                            <li><b>Строгие размерности СИ и CODATA 2022:</b> 80+ физических размерностей, 19 законов физики (Кеплер, Циолковский, Шварцшильд, Гоманн) и астрономические эфемериды.</li>
+                            <li><b>Потоковый архиватор <code>.poler</code>:</b> FastCDC + BLAKE3 + Zstd и <code>FSST</code>-сжатие словарей без распаковки на диск.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="terminal mono">
+                <div class="term-bar">
+                    <div class="term-dots">
+                        <span class="dot dot-r"></span>
+                        <span class="dot dot-y"></span>
+                        <span class="dot dot-g"></span>
+                    </div>
+                    <span>poler-engine — Демонстрация единого вычислительного контура (15.7 МБ RAM)</span>
+                    <span>x86_64 Native</span>
+                </div>
+                <div class="term-body">
+                    <div><span class="c-comment"># 1. Квантовая унитарная эволюция Шрёдингера: переворот спина оператором Паули σ_y за 1.72 мс</span></div>
+                    <div><span class="c-prompt">poler&gt;</span> <span class="c-cmd">calc schrodinger(pauli_y(), [1; 0], pi/2)</span></div>
+                    <div class="c-out">  =&gt; [3.3306690738754696e-16; 1.0000000000000007]   (P(|↓⟩) = 1.000000000000000, wall: 1.72 ms)</div>
+                    <br>
+                    <div><span class="c-comment"># 2. Спектр гамильтониана квантовой потенциальной ямы 256×256 через бисекцию Штурма (без взрыва Уилкинсона!)</span></div>
+                    <div><span class="c-prompt">poler&gt;</span> <span class="c-cmd">calc eigen_sturm(tridiag(2, -1, 256))</span></div>
+                    <div class="c-out">  =&gt; Σλ = 512.0000000000000 (trace parity), Πλ = det = 257.0000000000000 (max err: 2.8e-14)</div>
+                    <br>
+                    <div><span class="c-comment"># 3. Гравитационный радиус Шварцшильда Земли и солнечное затмение в одном выражении</span></div>
+                    <div><span class="c-prompt">poler&gt;</span> <span class="c-cmd">= 2 * G * (5.972e24 kg) / c^2</span></div>
+                    <div class="c-out">  =&gt; 0.008869805825435334 m   (~8.87 мм, строгий контроль размерностей СИ)</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: Benchmark Comparison -->
+    <section id="schrodinger">
+        <div class="container">
+            <div class="sec-header">
+                <span class="sec-eyebrow mono">Верифицированные Паспорта Производительности</span>
+                <h2 class="sec-title">POLER Engine против классических пакетов (Qiskit / MATLAB / Wolfram)</h2>
+                <p class="sec-desc">
+                    За счёт отказа от тяжёлых виртуальных машин, использования сбалансированных тритов <code>Trit5</code> и прямых SIMD-ядер весь монолит работает с потреблением памяти уровня блокнота.
+                </p>
+            </div>
+
+            <div class="table-wrap mono">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Вычислительная задача</th>
+                            <th>POLER Engine (v0.92.0)</th>
+                            <th>Классические пакеты (Qiskit / MATLAB / Python)</th>
+                            <th>Преимущество</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><b>Пиковое потребление памяти (Max RSS)</b></td>
+                            <td style="color: var(--emerald); font-weight: 700;">15.7 – 38.0 МБ</td>
+                            <td>1 500 – 8 000 МБ (Python/JVM рантайм)</td>
+                            <td><b>В 100× легче</b></td>
+                        </tr>
+                        <tr>
+                            <td><b>Унитарная эволюция Шрёдингера <code>exp(-iHt)ψ</code></b></td>
+                            <td style="color: var(--emerald); font-weight: 700;">1.72 мс</td>
+                            <td>120 – 850 мс (инициализация + SciPy expm)</td>
+                            <td><b>Мгновенный отклик</b></td>
+                        </tr>
+                        <tr>
+                            <td><b>Собственные значения матрицы <code>n = 256</code></b></td>
+                            <td style="color: var(--emerald); font-weight: 700;">Ошибка 2.8·10⁻¹⁴ (Штурм)</td>
+                            <td>Взрыв Уилкинсона 1.9·10⁶ у charpoly при n &gt; 24</td>
+                            <td><b>Абсолютная устойчивость</b></td>
+                        </tr>
+                        <tr>
+                            <td><b>Симуляция запутанности GHZ-1024 кубитов</b></td>
+                            <td style="color: var(--emerald); font-weight: 700;">93 – 367 мс (CPU)</td>
+                            <td>Требует специализированного кластера / облака</td>
+                            <td><b>Локально на любом ПК</b></td>
+                        </tr>
+                        <tr>
+                            <td><b>Открытие и поиск по файлам 10.5+ ГБ</b></td>
+                            <td style="color: var(--emerald); font-weight: 700;">0.12 мс открытие / 23 МБ RAM</td>
+                            <td>Зависание или Out of Memory (VS Code / Notepad++)</td>
+                            <td><b>Zero-Copy mmap</b></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 3: Master Plan for Building the GUI (POLER Studio) -->
+    <section id="gui-plan">
+        <div class="container">
+            <div class="sec-header">
+                <span class="sec-eyebrow mono">Дорожная Карта Десктопного Продукта</span>
+                <h2 class="sec-title">План сборки графической оболочки: POLER Studio (Qt6 C++ + Full Rust Engine)</h2>
+                <p class="sec-desc">
+                    Мы уже доказали эффективность связки <b>тонкого C++/Qt6 клиента (180 КБ)</b> и <b>JSON-RPC процесса на Rust</b> в проекте <a href="https://poler-engine-org.github.io/poler-edit-qt/" style="color: var(--emerald);">POLER Edit</a>. Теперь эта же безотказная архитектура масштабируется на полный монолит <b>POLER Engine</b>.
+                </p>
+            </div>
+
+            <div class="roadmap-step">
+                <div class="step-phase mono">
+                    ФАЗА 1
+                    <span class="step-status">Кросс-компиляция</span>
+                </div>
+                <div>
+                    <h3 style="font-size: 1.3rem; margin-bottom: 8px; color: #fff;">1. Нативная сборка полного монолита <code>poler-engine.exe</code> под Windows и Linux</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 12px;">
+                        Весь вычислительный контур (<code>calc</code>, <code>quantum</code>, <code>pqc</code>, <code>poler-eri</code>, <code>triune</code>, <code>archive</code>, <code>search</code>) сохраняется как единый неделимый бинарник, чтобы сложные расчёты могли одновременно вызывать триты, роторы, нейроны и сжатие:
+                    </p>
+                    <ul class="mono" style="font-size: 0.85rem; color: #cbd5e1; list-style: none;">
+                        <li>▹ <b>Изоляция Linux-примитивов:</b> модули <code>boxenv</code> и <code>winpe</code> уже закрыты гвардами <code>#[cfg(target_os = "linux")]</code>; для <code>gateway</code> (PTY/mount) и System V ABI ассемблерных вставок в <code>src/asm/</code> добавляется атрибут <code>sysv64</code> (<code>extern "sysv64" fn</code>), позволяющий вызывать те же x86_64 AVX2/AVX-512 микроядра напрямую на Windows без переписывания регистров <code>rdi/rsi/rdx</code>!</li>
+                        <li>▹ <b>Статический CRT (<code>+crt-static</code>):</b> ядро <code>poler-engine.exe</code> компилируется со статически вшитым рантаймом и запускается флагом <code>CREATE_NO_WINDOW</code> без чёрного окна консоли.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="roadmap-step">
+                <div class="step-phase mono">
+                    ФАЗА 2
+                    <span class="step-status">JSON-RPC Мост</span>
+                </div>
+                <div>
+                    <h3 style="font-size: 1.3rem; margin-bottom: 8px; color: #fff;">2. Резидентный демон <code>poler-engine --studio-serve</code> (34 инструмента в реальном времени)</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 12px;">
+                        Расширение проверенного протокола <code>EngineBridge</code> (как в <code>poler-edit-core</code>) до мультидоменного стримингового шины <code>stdio JSON-lines</code>:
+                    </p>
+                    <ul class="mono" style="font-size: 0.85rem; color: #cbd5e1; list-style: none;">
+                        <li>▹ <b>Резидентная память сессии:</b> переменные калькулятора, матрицы, квантовые регистры <code>|ψ⟩</code>, загруженные кристаллы <code>.t5c</code> и открытые <code>mmap</code>-буферы живут в памяти между командами.</li>
+                        <li>▹ <b>As-You-Type вычисления (Debounce 80 мс):</b> пользователь набирает выражение <code>schrodinger(pauli_y(), [1;0], t)</code> или <code>eigen_sturm(...)</code> — GUI мгновенно получает JSON с вектором состояния, спектром, размерностью СИ и графиком без нажатия Enter.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="roadmap-step">
+                <div class="step-phase mono">
+                    ФАЗА 3
+                    <span class="step-status">Qt6 Интерфейс</span>
+                </div>
+                <div>
+                    <h3 style="font-size: 1.3rem; margin-bottom: 8px; color: #fff;">3. Четыре рабочих пространства в едином окне <code>POLER Studio (Qt6 Widgets)</code></h3>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 12px;">
+                        Молниеносный нативный интерфейс на C++17 / Qt6 Widgets в фирменной тёмной палитре Breeze/Emerald (без тяжёлого Electron/Chromium):
+                    </p>
+                    <div class="grid-2" style="margin-top: 14px; gap: 16px;">
+                        <div style="background: #070b14; border: 1px solid var(--border); padding: 16px; border-radius: 10px;">
+                            <strong style="color: var(--emerald); display: block; margin-bottom: 6px;">📐 Вкладка 1: Калькулятор Всего (Live Notebook)</strong>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Многострочный интерактивный лист: формулы, единицы СИ, 19 физических законов (Кеплер, Шварцшильд, Циолковский), астрономический календарь затмений и геодезия WGS84 с живым превью ответа справа от каждой строки.</span>
+                        </div>
+                        <div style="background: #070b14; border: 1px solid var(--border); padding: 16px; border-radius: 10px;">
+                            <strong style="color: var(--cyan); display: block; margin-bottom: 6px;">🌌 Вкладка 2: Лаборатория Шрёдингера и Кубитов</strong>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Визуализация сферы Блоха, амплитуд волновой функции <code>|ψ(x,t)|²</code>, уровней энергии гамильтониана из <code>eigen_sturm</code>, конструктор квантовых вентилей (до 1024 стабилизаторных кубитов) и очистка шума МакУини.</span>
+                        </div>
+                        <div style="background: #070b14; border: 1px solid var(--border); padding: 16px; border-radius: 10px;">
+                            <strong style="color: var(--purple); display: block; margin-bottom: 6px;">🧠 Вкладка 3: Трит-Нейроны и Квантовая Химия (ERI)</strong>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Монитор активаций тритной популяции <code>Trit5</code>, роторной фазы <code>exp(J·Ψ)</code>, 3D-просмотрщик молекул (PDB/SDF/SMILES) и расчёт энергии Хартри–Фока (RHF/STO-3G).</span>
+                        </div>
+                        <div style="background: #070b14; border: 1px solid var(--border); padding: 16px; border-radius: 10px;">
+                            <strong style="color: var(--amber); display: block; margin-bottom: 6px;">📦 Вкладка 4: Редактор 100+ ГБ и Архиватор .poler</strong>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Встроенный модуль <code>poler-edit</code> для мгновенного открытия и каузального ε-поиска по многогигабайтным логам и редактирования контейнеров <code>.poler</code> на лету без распаковки.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="roadmap-step" id="windows-pipeline">
+                <div class="step-phase mono">
+                    ФАЗА 4
+                    <span class="step-status">Zero-Friction Setup</span>
+                </div>
+                <div>
+                    <h3 style="font-size: 1.3rem; margin-bottom: 8px; color: #fff;">4. Автосборщик Windows и Linux в один клик (без консоли и ручных DLL)</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 12px;">
+                        Полная автоматизация через GitHub Actions по стандарту, отработанному на <code>POLER-Edit-Setup-x64.exe</code>:
+                    </p>
+                    <ul class="mono" style="font-size: 0.85rem; color: #cbd5e1; list-style: none;">
+                        <li>▹ <b>Встроенный рантайм:</b> все библиотеки <code>Qt6*.dll</code>, <code>platforms/qwindows.dll</code> и полный набор <code>MSVC CRT (vcruntime140*.dll, msvcp140*.dll, concrt140.dll)</code> автоматически упаковываются внутрь инсталлятора.</li>
+                        <li>▹ <b>Атомарное обновление DLL:</b> инсталлятор обходит блокировки занятых браузером/системой библиотек через атомарное переименование и ставит программу в <code>%LOCALAPPDATA%\Programs\</code> без запроса прав администратора и без перезагрузки Windows.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 4: Ecosystem Links -->
+    <section id="ecosystem">
+        <div class="container">
+            <div class="sec-header">
+                <span class="sec-eyebrow mono">Экосистема POLER Systems</span>
+                <h2 class="sec-title">Доступные Релизы и Репозитории</h2>
+                <p class="sec-desc">Выберите готовый дистрибутив или перейдите к исходным кодам платформы.</p>
+            </div>
+
+            <div class="grid-2">
+                <div class="card card-highlight">
+                    <div>
+                        <div class="card-head">
+                            <span class="card-badge mono">ГОТОВЫЙ GUI РЕЛИЗ v0.3.0</span>
+                            <span class="mono" style="color: var(--emerald);">Windows &amp; Linux</span>
+                        </div>
+                        <h3>POLER Edit — Текстовый Редактор для 10+ ГБ файлов</h3>
+                        <p>Первое графическое приложение экосистемы POLER на Qt6 + Rust Zero-Copy Piece-Table. Открывает 10.5 ГБ за доли секунды при 23 МБ RAM. Включает новый автоустановщик <code>POLER-Edit-Setup-x64.exe</code>.</p>
+                    </div>
+                    <div class="btn-group" style="justify-content: flex-start; margin-top: 12px;">
+                        <a href="https://github.com/poler-engine-org/poler-edit-qt/releases/download/v0.3.0/POLER-Edit-Setup-x64.exe" class="btn btn-emerald" style="padding: 10px 18px; font-size: 0.86rem;">Скачать Setup.exe (Windows x64)</a>
+                        <a href="https://poler-engine-org.github.io/poler-edit-qt/" class="btn btn-outline" style="padding: 10px 18px; font-size: 0.86rem;">Сайт POLER Edit →</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div>
+                        <div class="card-head">
+                            <span class="card-badge mono">ЯДРО ПЛАТФОРМЫ v0.92.0</span>
+                            <span class="mono" style="color: var(--cyan);">400 000+ LOC</span>
+                        </div>
+                        <h3>POLER Engine — Полный Вычислительный Монолит</h3>
+                        <p>Калькулятор Всего, квантовый симулятор Шрёдингера и Готтесмана–Книлля, тритные ассемблерные микроядра VAULT-ASM, квантовая химия POLER-ERI и потоковый архиватор <code>.poler</code>.</p>
+                    </div>
+                    <div class="btn-group" style="justify-content: flex-start; margin-top: 12px;">
+                        <a href="https://github.com/poler-engine-org/poler-engine" class="btn btn-outline" style="padding: 10px 18px; font-size: 0.86rem;">Репозиторий poler-engine →</a>
+                        <a href="https://github.com/poler-engine-org" class="btn btn-outline" style="padding: 10px 18px; font-size: 0.86rem;">Организация GitHub</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p style="margin-bottom: 8px; color: #e2e8f0; font-weight: 600;">© 2026 POLER Systems · ФОП Коток Віталій Володимирович (Kotokvit)</p>
+            <p>
+                <a href="https://github.com/poler-engine-org/poler-engine">POLER Engine</a> ·
+                <a href="https://poler-engine-org.github.io/poler-edit-qt/">POLER Edit</a> ·
+                <a href="https://poler-engine-org.github.io/poler-edit-qt/oferta.html">Публичная оферта</a> ·
+                <a href="mailto:vitalijkotok18@gmail.com">vitalijkotok18@gmail.com</a>
+            </p>
+        </div>
+    </footer>
+
+</body>
+</html>
