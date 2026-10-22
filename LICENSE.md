@@ -2,11 +2,11 @@
 
 **Version 1.0 — effective 2026-10-12**
 
-Copyright (c) 2025–2026 POLER Engineering Core (poler-engine-org). All rights reserved.
+Copyright (c) 2025–2026 POLER Systems (ФОП Коток Віталій Володимирович). All rights reserved.
 
 ## 1. Definitions
 
-- **"Licensor"** means POLER Engineering Core (poler-engine-org), the author and rights holder of the POLER Edit software.
+- **"Licensor"** means POLER Systems (ФОП Коток Віталій Володимирович, ЄДРПОУ/РНОКПП: 3581104355), the author and rights holder of the POLER Edit software.
 - **"Software"** means POLER Edit (including the Qt GUI and the standalone `poler-edit-core` backend, build scripts, and documentation).
 - **"Source Code"** means the human-readable source code made available in the Licensor's official repository.
 - **"Modifications"** means any changes, forks, partial extractions, patches, or derivative works of the Software in source or object form.
@@ -41,5 +41,6 @@ Precompiled official releases on app marketplaces (Microsoft Store, Google Play,
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY DAMAGES, INCLUDING DATA LOSS OR BUSINESS INTERRUPTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OF THIS SOFTWARE.
 
-**Official Repository:** https://github.com/poler-engine-org/poler-edit-qt  
-**Contact:** dev@poler-engine.org
+**Official Repository & Releases:** https://github.com/poler-engine-org/poler-edit-qt  
+**Official Store & Oferta:** https://poler-engine-org.github.io/poler-edit-qt/  
+**Contact & Support:** vitalik19992403@gmail.com
