@@ -3,7 +3,10 @@ name = "poler-edit-core"
 version = "0.3.0"
 edition = "2021"
 description = "Pure Piece-Table buffer backend for poler-edit"
-license = "MIT OR Apache-2.0"
+# POLER Edit Custom Source-Available & Commercial License v1.0 — см. ../LICENSE.md.
+# SPDX не стандартизирует кастомные лицензии — используем license-file.
+# Метаданные пакета не должны быть пермиссивнее LICENSE.md репозитория.
+license-file = "../LICENSE.md"
 
 [dependencies]
 memmap2 = "0.9"
