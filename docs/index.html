@@ -92,10 +92,10 @@
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <a href="#pricing" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-dark-bg font-bold text-base transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center space-x-2">
                     <span>Отримати комерційну Pro ліцензію</span>
-                    <span class="text-xs bg-emerald-950/40 text-emerald-950 px-2 py-0.5 rounded font-mono font-bold">499 ₴</span>
+                    <span class="text-xs bg-emerald-950/40 text-emerald-950 px-2 py-0.5 rounded font-mono font-bold">від 300 ₴/міс</span>
                 </a>
-                <a href="https://github.com/poler-engine-org/poler-edit-qt/releases" target="_blank" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-dark-card hover:bg-dark-hover border border-dark-border text-slate-200 font-semibold text-base transition-all flex items-center justify-center space-x-2">
-                    <span>Оцінити безкоштовно (GitHub)</span>
+                <a href="#pricing" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-dark-card hover:bg-dark-hover border border-dark-border text-slate-200 font-semibold text-base transition-all flex items-center justify-center space-x-2">
+                    <span>15 днів Pro Trial (Безкоштовно)</span>
                 </a>
             </div>
 
@@ -297,78 +297,71 @@
 
     <!-- Тарифи та Ліцензування (Комплаєнс LiqPay + LICENSE.md) -->
     <section id="pricing" class="py-20 bg-dark-card border-t border-dark-border">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-3xl mx-auto mb-16">
                 <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-mono font-semibold mb-3">Офіційне ліцензування</h2>
-                <p class="text-3xl sm:text-4xl font-extrabold text-white">Тарифи відповідно до POLER Commercial License</p>
+                <p class="text-3xl sm:text-4xl font-extrabold text-white">Прозорі тарифи без прихованих платежів</p>
                 <p class="text-slate-400 text-sm mt-3">Безпечна оплата через шлюз LiqPay від ПриватБанку. Миттєва генерація Ed25519 ключа на ваш E-mail.</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                <!-- Community Edition -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
+                <!-- 15-Day Free Trial -->
                 <div class="p-8 rounded-2xl bg-[#080b10] border border-dark-border flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-xl font-bold text-white">Community Edition</h3>
-                            <span class="text-xs px-2.5 py-1 rounded bg-slate-800 text-slate-300 font-mono">Безкоштовно</span>
+                            <h3 class="text-xl font-bold text-white">15-Day Free Trial</h3>
+                            <span class="text-xs px-2.5 py-1 rounded bg-slate-800 text-slate-300 font-mono">Пробний період</span>
                         </div>
                         <div class="flex items-baseline space-x-2 mb-6">
                             <span class="text-4xl font-extrabold text-white font-mono">0 ₴</span>
-                            <span class="text-slate-400 text-sm font-mono">/ Lifetime доступ</span>
+                            <span class="text-slate-400 text-sm font-mono">/ 15 днів повного Pro</span>
                         </div>
                         <p class="text-xs text-slate-400 mb-6 leading-relaxed">
-                            Базова суверенна версія для персонального використання, некомерційного аудиту коду та ознайомлення.
+                            Випробуйте всю міць ядра на ваших власних 10 ГБ файлах без введення картки та зобов'язань.
                         </p>
                         <ul class="space-y-3.5 text-sm text-slate-300 mb-8">
                             <li class="flex items-center space-x-3">
                                 <span class="text-emerald-400 font-bold">✓</span>
-                                <span>Відкриття файлів будь-якого розміру (до 10 ГБ)</span>
+                                <span>Повний функціонал Pro без обмежень за розміром</span>
                             </li>
                             <li class="flex items-center space-x-3">
                                 <span class="text-emerald-400 font-bold">✓</span>
-                                <span>Zero-Copy Piece-Table ядро на Rust</span>
+                                <span>Редагування та створення 10+ ГБ на Piece-Table</span>
                             </li>
                             <li class="flex items-center space-x-3">
                                 <span class="text-emerald-400 font-bold">✓</span>
-                                <span>Базовий живий пошук (as-you-type)</span>
+                                <span>Search Engine v2 з двофазним ε-скролінгом для AI</span>
                             </li>
                             <li class="flex items-center space-x-3">
                                 <span class="text-emerald-400 font-bold">✓</span>
-                                <span>Завантажити з GitHub (Lifetime доступ)</span>
+                                <span>Офлайн робота без телеметрії та стеження</span>
                             </li>
                         </ul>
                     </div>
                     <a href="https://github.com/poler-engine-org/poler-edit-qt/releases" target="_blank" class="w-full py-3.5 rounded-xl bg-dark-hover hover:bg-slate-800 border border-dark-border text-center font-semibold text-slate-200 transition-colors flex items-center justify-center space-x-2">
-                        <span>Завантажити з GitHub</span>
+                        <span>Завантажити Pro Trial (15 днів)</span>
                         <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                     </a>
                 </div>
 
-                <!-- POLER Edit Pro -->
-                <div class="p-8 rounded-2xl bg-[#080b10] border-2 border-emerald-500/60 shadow-2xl relative flex flex-col justify-between glow-emerald">
-                    <div class="absolute -top-3 right-6 px-3 py-1 bg-emerald-500 text-dark-bg font-extrabold text-xs uppercase tracking-wider rounded-full font-mono">
-                        POLER Edit Pro
-                    </div>
+                <!-- Pro Monthly -->
+                <div class="p-8 rounded-2xl bg-[#080b10] border border-dark-border flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-xl font-bold text-white">POLER Edit Pro</h3>
-                            <span class="text-xs px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">Одноразово</span>
+                            <h3 class="text-xl font-bold text-white">Pro Monthly</h3>
+                            <span class="text-xs px-2.5 py-1 rounded bg-blue-500/20 text-blue-300 font-mono">Гнучкий</span>
                         </div>
                         <div class="flex items-baseline space-x-2 mb-6">
-                            <span class="text-4xl font-extrabold text-white font-mono">499 ₴</span>
-                            <span class="text-slate-400 text-sm font-mono">/ безстроково (~$12)</span>
+                            <span class="text-4xl font-extrabold text-white font-mono">300 ₴</span>
+                            <span class="text-slate-400 text-sm font-mono">/ місяць (~$7.5)</span>
                         </div>
-                        <p class="text-xs text-slate-400 mb-4 leading-relaxed font-semibold text-slate-200">
-                            Все, що є в Community, плюс:
+                        <p class="text-xs text-slate-400 mb-6 leading-relaxed">
+                            Для проєктних робіт, швидкого розбору аварійних інцидентів, аудиту БД та фрілансерів.
                         </p>
-                        <ul class="space-y-3 text-sm text-slate-300 mb-8">
+                        <ul class="space-y-3.5 text-sm text-slate-300 mb-8">
                             <li class="flex items-center space-x-3">
                                 <span class="text-emerald-400 font-bold">✓</span>
-                                <span>Пріоритетна фаза в'юпорта: миттєві збіги в екрані</span>
-                            </li>
-                            <li class="flex items-center space-x-3">
-                                <span class="text-emerald-400 font-bold">✓</span>
-                                <span>Підрахунок ε-енергії значимості та резонансу R(t)</span>
+                                <span>Повний комерційний доступ на 30 днів</span>
                             </li>
                             <li class="flex items-center space-x-3">
                                 <span class="text-emerald-400 font-bold">✓</span>
@@ -376,21 +369,91 @@
                             </li>
                             <li class="flex items-center space-x-3">
                                 <span class="text-emerald-400 font-bold">✓</span>
-                                <span>Всі наступні мінорні та мажорні оновлення</span>
+                                <span>Всі мінорні оновлення протягом місяця</span>
+                            </li>
+                            <li class="flex items-center space-x-3">
+                                <span class="text-emerald-400 font-bold">✓</span>
+                                <span>Швидка активація без прив'язки до онлайну</span>
                             </li>
                         </ul>
                     </div>
-
                     <div>
-                        <div class="mb-4">
-                            <label class="block text-xs font-mono text-slate-400 mb-1.5">Ваш E-mail для отримання ліцензійного ключа:</label>
-                            <input type="email" id="customerEmail" placeholder="developer@domain.com" class="w-full px-4 py-2.5 rounded-lg bg-[#080b10] border border-dark-border text-white text-sm focus:outline-none focus:border-emerald-500 font-mono">
+                        <div class="mb-3">
+                            <label class="block text-xs font-mono text-slate-400 mb-1">E-mail для ключа на 1 місяць:</label>
+                            <input type="email" id="monthlyEmail" placeholder="developer@domain.com" class="w-full px-3.5 py-2.5 rounded-lg bg-[#080b10] border border-dark-border text-white text-sm focus:outline-none focus:border-blue-500 font-mono">
                         </div>
-                        <button onclick="handleBuyClick()" class="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-dark-bg font-extrabold text-center transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center space-x-2">
-                            <span>Придбати ліцензію через LiqPay</span>
+                        <button onclick="handleBuyClick('monthly')" class="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-center transition-all flex items-center justify-center space-x-2">
+                            <span>Придбати (300 ₴ / міс)</span>
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                         </button>
                     </div>
+                </div>
+
+                <!-- Pro Annual -->
+                <div class="p-8 rounded-2xl bg-[#080b10] border-2 border-emerald-500/70 shadow-2xl relative flex flex-col justify-between glow-emerald">
+                    <div class="absolute -top-3 right-6 px-3 py-1 bg-emerald-500 text-dark-bg font-extrabold text-xs uppercase tracking-wider rounded-full font-mono">
+                        Економія 600 ₴ (Хіт)
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold text-white">Pro Annual</h3>
+                            <span class="text-xs px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">Річна ліцензія</span>
+                        </div>
+                        <div class="flex items-baseline space-x-2 mb-6">
+                            <span class="text-4xl font-extrabold text-white font-mono">3 000 ₴</span>
+                            <span class="text-slate-400 text-sm font-mono">/ рік (~$75, 2 міс. у подарунок)</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-6 leading-relaxed">
+                            Оптимальний вибір для системних інженерів, DBA, DevOps та продакшен-команд.
+                        </p>
+                        <ul class="space-y-3.5 text-sm text-slate-300 mb-8">
+                            <li class="flex items-center space-x-3">
+                                <span class="text-emerald-400 font-bold">✓</span>
+                                <span><b>365 днів необмеженого використання</b></span>
+                            </li>
+                            <li class="flex items-center space-x-3">
+                                <span class="text-emerald-400 font-bold">✓</span>
+                                <span>Всі мажорні та мінорні оновлення ядра</span>
+                            </li>
+                            <li class="flex items-center space-x-3">
+                                <span class="text-emerald-400 font-bold">✓</span>
+                                <span>Річний криптографічний ключ Ed25519</span>
+                            </li>
+                            <li class="flex items-center space-x-3">
+                                <span class="text-emerald-400 font-bold">✓</span>
+                                <span>Пріоритетна технічна підтримка розробника</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div>
+                        <div class="mb-3">
+                            <label class="block text-xs font-mono text-slate-400 mb-1">E-mail для річного ключа:</label>
+                            <input type="email" id="annualEmail" placeholder="developer@domain.com" class="w-full px-3.5 py-2.5 rounded-lg bg-[#080b10] border border-dark-border text-white text-sm focus:outline-none focus:border-emerald-500 font-mono">
+                        </div>
+                        <button onclick="handleBuyClick('annual')" class="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-dark-bg font-extrabold text-center transition-all shadow-xl shadow-emerald-500/25 flex items-center justify-center space-x-2">
+                            <span>Оформити на рік (3 000 ₴)</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lifetime опція для тих, хто хоче володіти вічно -->
+            <div class="mt-10 p-6 rounded-2xl bg-[#080b10] border border-dark-border flex flex-col sm:flex-row items-center justify-between gap-6 max-w-6xl mx-auto">
+                <div class="space-y-1 text-center sm:text-left">
+                    <div class="flex items-center justify-center sm:justify-start space-x-2">
+                        <span class="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider">Lifetime Enterprise</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-mono">Безстроково</span>
+                    </div>
+                    <div class="text-white font-bold text-lg">Потрібна довічна ліцензія без щомісячних чи річних подовжень?</div>
+                    <p class="text-xs text-slate-400 max-w-2xl">
+                        Одноразовий платіж <b>4 999 ₴</b> (~$120) за постійний безстроковий ключ Ed25519 (expiry = 0) для одного робочого місця з довічними оновленнями.
+                    </p>
+                </div>
+                <div class="flex-shrink-0 w-full sm:w-auto">
+                    <button onclick="handleBuyClick('lifetime')" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-dark-card hover:bg-dark-hover border border-emerald-500/40 text-emerald-300 font-bold text-sm transition-all flex items-center justify-center space-x-2">
+                        <span>Придбати Lifetime (4 999 ₴)</span>
+                    </button>
                 </div>
             </div>
 
@@ -460,15 +523,34 @@
     </footer>
 
     <script>
-        function handleBuyClick() {
-            const emailInput = document.getElementById('customerEmail');
-            const email = emailInput.value.trim();
+        function handleBuyClick(plan) {
+            let email = '';
+            let planName = '';
+            let amount = 0;
+
+            if (plan === 'monthly') {
+                const el = document.getElementById('monthlyEmail');
+                email = el ? el.value.trim() : '';
+                planName = 'POLER Edit Pro Monthly (300 ₴)';
+                amount = 300;
+            } else if (plan === 'annual') {
+                const el = document.getElementById('annualEmail');
+                email = el ? el.value.trim() : '';
+                planName = 'POLER Edit Pro Annual (3 000 ₴)';
+                amount = 3000;
+            } else if (plan === 'lifetime') {
+                email = prompt('Вкажіть ваш E-mail для генерації безстрокового Ed25519 ключа (4 999 ₴):', 'developer@domain.com') || '';
+                email = email.trim();
+                planName = 'POLER Edit Lifetime Enterprise (4 999 ₴)';
+                amount = 4999;
+            }
+
             if (!email || !email.includes('@')) {
-                alert('Будь ласка, вкажіть коректний E-mail для надсилання ліцензійного ключа.');
-                emailInput.focus();
+                alert('Будь ласка, вкажіть коректний E-mail для отримання криптографічного ключа Ed25519.');
                 return;
             }
-            alert('Дякуємо! Перенаправлення на захищений платіжний шлюз LiqPay для оплати ліцензії POLER Edit Pro (499 ₴)...');
+
+            alert(`Дякуємо! Перенаправлення на захищений платіжний шлюз LiqPay від ПриватБанку для оплати «${planName}» на суму ${amount} ₴.\n\nКлюч ліцензії формату PE1-... буде згенеровано та надіслано на ${email}.`);
         }
     </script>
 </body>
