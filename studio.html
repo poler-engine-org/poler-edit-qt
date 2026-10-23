@@ -575,6 +575,66 @@
         </div>
     </section>
 
+    <!-- Section 1.5: Hardware Philosophy Manifesto (Absolute Zero, True Boole = Trit, 3 States via 2) -->
+    <section id="trit-zero-manifesto" style="border-bottom: 1px solid var(--border); background: radial-gradient(circle at 20% 30%, rgba(16, 185, 129, 0.06), transparent 60%);">
+        <div class="container">
+            <div class="sec-header">
+                <span class="sec-eyebrow mono">Аппаратная Философия · Истинный Буль и Абсолютный Ноль</span>
+                <h2 class="sec-title">Почему каждый процессор Intel — уже троичный («Три состояния через Два»), и зачем нужен Абсолютный Ноль <code>[N:D]</code></h2>
+                <p class="sec-desc">
+                    Те, кто в XX веке пытались паять отдельные «троичные процессоры» на трёх уровнях напряжения, не поняли фундаментального закона: <b>Буль — это трит (<code>𝕋 = {-1, 0, +1}</code>)</b>, а три состояния и в квантовой механике, и в любом кремниевом чипе всегда выражаются через два.
+                </p>
+            </div>
+
+            <div class="grid-3">
+                <div class="card card-highlight">
+                    <div>
+                        <div class="card-head">
+                            <span class="card-badge mono">src/asm/zero_asm.rs</span>
+                            <span class="mono" style="color: var(--emerald);">ABS-ZERO v0.89</span>
+                        </div>
+                        <h3>1. Абсолютный Ноль <code>[N:D]</code> (Ускорение в 2–10 раз)</h3>
+                        <p>В любом процессоре <code>x86_64</code> сложение занимает 1 такт, а аппаратное деление (<code>IDIV</code> / <code>DIVSD</code>) вешает конвейер на 20–45 тактов и требует проверок на ноль:</p>
+                        <ul>
+                            <li><b>Деления нет вообще:</b> на проективной прямой <code>ℝP¹</code> точка <code>[N:D]</code> заменяет деление <code>a/b</code> на перекрёстное умножение <code>[N1·D2 : D1·N2]</code>, а инверсия — это просто обмен регистров за 1 такт (полюс <code>D=0</code> — точка, а не сбой <code>#DE</code>).</li>
+                            <li><b>Байт вакуума <code>121 = (3⁵−1)/2</code>:</b> в отличие от сломанного нуля <code>IEEE-754</code> (два нуля <code>+0/-0</code> и 1074 ступени тормозных субнормалей), вокруг нуля пустой шар изоляции. Инструкция <code>pcmpeqb + popcnt</code> за такт проверяет 80 тритов на код <code>121</code> (все <code>⊙</code>) и мгновенно выбрасывает пустой вакуум из счёта!</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div>
+                        <div class="card-head">
+                            <span class="card-badge mono">src/asm/trit_asm.rs</span>
+                            <span class="mono" style="color: var(--cyan);">Истинный Буль</span>
+                        </div>
+                        <h3>2. Каждый процессор Intel — это Три состояния через Два</h3>
+                        <p>Перепаивать транзисторы под три напряжения не нужно — любое АЛУ Intel со времён первого чипа уже работает как троичная машина:</p>
+                        <ul>
+                            <li><b>Два флага → Три состояния:</b> базовое сравнение <code>CMP a, b</code> через два флага (<code>SF</code> и <code>ZF</code>) делит мир ровно на три исхода: <code>−1</code> (<code>&lt;0</code>), <code>0</code> (<code>==0</code>) и <code>+1</code> (<code>&gt;0</code>), а шина работает в <code>Tri-State (0, 1, High-Z)</code>.</li>
+                            <li><b>Аппаратные инструкции тритов в x86_64:</b> <code>vpsignb</code> выполняет умножение на трит <code>{-1,0,+1}</code> за 1 такт без умножителя, <code>vpminsb/vpmaxsb</code> реализуют вентили Клини, а <code>VPTERNLOGD</code> считает любую функцию трёх входов за один такт.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div>
+                        <div class="card-head">
+                            <span class="card-badge mono">src/asm/qutrit_asm.rs</span>
+                            <span class="mono" style="color: var(--purple);">Трит ⇄ Кубит</span>
+                        </div>
+                        <h3>3. Трит первичен для Кубита, но порождается Кубитом</h3>
+                        <p>Геометрия <code>qutrit3</code> и квантовая механика подчиняются одному и тому же закону проекции трёх состояний через две координаты:</p>
+                        <ul>
+                            <li><b>Плоскость A₂ (<code>x + y + z ≡ 0</code>):</b> в ядре <code>poler_az_qutrit3</code> две координаты <code>(N, D)</code> однозначно задают третью <code>−(N+D)</code>, а три фазы кутрита (<code>1 + ω + ω² = 0</code>, шаг <code>120°</code>) живут на 2D-плоскости <code>(re, im)</code>.</li>
+                            <li><b>Закон кубита:</b> состояние кубита пишется через 2 амплитуды <code>(α|0⟩ + β|1⟩)</code>, но его физическая алгебра <code>su(2)</code> держится на 3 осях Паули <code>(σ_x, σ_y, σ_z)</code> и 3 исходах взаимодействия (<code>+1</code>, <code>−1</code>, <code>0</code>).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Section 2: Benchmark Comparison -->
     <section id="schrodinger">
         <div class="container">
