@@ -518,15 +518,15 @@
                 <div class="card">
                     <div>
                         <div class="card-head">
-                            <span class="card-badge mono">src/asm/ + src/triune/</span>
+                            <span class="card-badge mono">src/asm/ + src/ssn/ + src/triune/</span>
                             <span class="mono" style="color: var(--cyan);">Ядро №2</span>
                         </div>
-                        <h3>Трит-Синапсы, Нейроны и Ротор Фазы</h3>
-                        <p>Аппаратная сбалансированная троичная физика <code>𝕋 = {-1, 0, +1}</code> на чистом x86_64 ассемблере (<code>global_asm!</code>) без операций умножения:</p>
+                        <h3>Собственные Синусы + Нейроны на Rust/ASM вместо любых Матриц</h3>
+                        <p>Полный отказ от классических матриц: выведенная за 4 года на бумаге синусоидальная математика фазовых роторов соединена с переписанной с нуля на Rust + x86_64 ASM топологией коннектома мухи:</p>
                         <ul>
-                            <li><b>Без умножителя (<code>vpsignb</code> / <code>VPTERNLOGD</code>):</b> скалярное произведение и вентили Клини исполняются за такт на регистрах AVX2/AVX-512.</li>
-                            <li><b>Симплектический ротор <code>J = (W − Wᵀ)/2</code>:</b> антисимметричная фаза вращает состояние без затухания нормы и зацикливания.</li>
-                            <li><b>Упаковка <code>pack5</code> (0.2 Б/синапс):</b> 5 тритов в 1 байт через цепочки <code>LEA ×3</code>. Коннектом мозга мухи FlyWire (50 млн синапсов) целиком помещается в 10 МБ кэша L3 процессора!</li>
+                            <li><b>Синусоидальные нейроны + ℤ₁₂/CORDIC роторы:</b> расчёт идёт через фазовые синусы <code>cos()</code> в регистрах процессора (<code>cordic_asm</code>, <code>synapse_trit_asm</code>) и сбалансированные триты <code>𝕋 = {-1, 0, +1}</code> без единой матрицы.</li>
+                            <li><b>Чистая топология без мусора:</b> из исходного датасета FlyWire выброшена вся тяжёлая обвязка — оставлена только голая схема связей (138 639 нейронов, 50 млн синапсов), переписанная на <code>global_asm!</code> и состыкованная с собственными синусоидальными нейронами.</li>
+                            <li><b>Весь коннектом в 10 МБ кэша L3 (<code>0.2 Б/синапс</code>):</b> упаковка <code>pack5</code> (5 тритов в байт через <code>LEA ×3</code>) и инструкция <code>vpsignb</code> позволяют гнать волну расчёта прямо в L3-кэше CPU со скоростью сотен миллионов синапсов в секунду.</li>
                         </ul>
                     </div>
                 </div>
@@ -694,8 +694,8 @@
                             <span style="font-size: 0.85rem; color: var(--text-secondary);">Как в обычном калькуляторе или компактном блокноте: вводишь арифметику, уравнения (<code>solve</code>), единицы СИ, физические законы (<code>kepler3</code>, <code>schwarzschild</code>), матрицы (<code>expm</code>, <code>eigen_sturm</code>) или уравнение Шрёдингера — и мгновенно получаешь точный ответ без шума и лишних панелей.</span>
                         </div>
                         <div style="background: #070b14; border: 1px solid var(--border); padding: 16px; border-radius: 10px;">
-                            <strong style="color: var(--cyan); display: block; margin-bottom: 6px;">⚙️ 2. Алгоритм «Мозга» вместо <code>float32</code>-матриц (Скрытый Вычислитель)</strong>
-                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Когда расчёт сложный (гамильтониан <code>256×256</code>, 26 кубитов или молекула), движок незаметно для пользователя заменяет тяжёлые матрицы с плавающей точкой на тритные синапсы (<code>0.2 Б/вес</code>), целочисленные синусы <code>CORDIC</code> и точную алгебру <code>ℤ[1/√2, i]</code> / <code>[N:D]</code> без накопления ошибок округления.</span>
+                            <strong style="color: var(--cyan); display: block; margin-bottom: 6px;">⚙️ 2. Синусы + Нейроны на Rust/ASM вместо любых Матриц (Скрытый Вычислитель)</strong>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Вместо классической матричной алгебры (которая взрывается по памяти и копит мусор округления) под капотом работают выведенные на бумаге фазовые синусы (<code>CORDIC / ℤ₁₂</code>), собственные синусоидальные нейроны и переписанная на чистый Rust + x86_64 ASM топология связей мухи в 10 МБ кэша L3.</span>
                         </div>
                         <div style="background: #070b14; border: 1px solid var(--border); padding: 16px; border-radius: 10px;">
                             <strong style="color: var(--purple); display: block; margin-bottom: 6px;">⚛️ 3. Контекстный карточный ответ (Кванты и Молекулы по запросу)</strong>
