@@ -681,45 +681,29 @@
             <div class="roadmap-step">
                 <div class="step-phase mono">
                     ФАЗА 3
-                    <span class="step-status">8 Доменов Qt6</span>
+                    <span class="step-status">Чистый Qt6 GUI</span>
                 </div>
                 <div>
-                    <h3 style="font-size: 1.3rem; margin-bottom: 8px; color: #fff;">3. Восемь рабочих пространств <code>POLER Studio (Qt6 Widgets)</code> — строго по живой схеме <code>--schema</code> и 34 MCP-инструментам</h3>
+                    <h3 style="font-size: 1.3rem; margin-bottom: 8px; color: #fff;">3. Лаконичный интерфейс «Простого Калькулятора» (Qt6 Widgets) — вся мощь скрыта под капотом</h3>
                     <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 12px;">
-                        После прямого опроса нативного <code>poler-engine.exe</code> на Windows (<code>--schema</code>, <code>--mcp</code>, <code>--jit-loop</code>, <code>--t5q-compile</code>, <code>--triune-demo</code>) архитектура GUI спроектирована без единого допущения — каждая панель напрямую привязана к реальным JSON-RPC методам сервера:
+                        Главный принцип GUI: <b>никакой лишней телеметрии «мозга» на экране</b>. Топология синапсов, коннектом, триты <code>Trit5</code>, роторы <code>CORDIC</code> и проективный ноль <code>[N:D]</code> — это не «искусственный интеллект», а <b>внутренний вычислительный алгоритм вместо матриц <code>float32</code> и погрешностей плавающей точки</b>. Снаружи пользователь видит чистый, быстрый и интуитивный калькулятор:
                     </p>
                     <div class="grid-2" style="margin-top: 14px; gap: 16px;">
                         <div style="background: #070b14; border: 1px solid var(--border); padding: 16px; border-radius: 10px;">
-                            <strong style="color: var(--emerald); display: block; margin-bottom: 6px;">📐 1. Калькулятор Всего и Генератор .poler (<code>poler_calc</code> + <code>calc script</code>)</strong>
-                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Резидентный лист с сохранением переменных и <code>ans</code>: 20 встроенных законов физики (<code>kepler3</code>, <code>schwarzschild</code>, <code>tsiolkovsky</code>, <code>hohmann</code>, <code>roche</code>, <code>planck_units</code>), матрицы <code>expm</code> / <code>det</code> / <code>eigen_sturm(tridiag(2,-1,256))</code> (точность <code>3·10⁻¹⁴</code> без взрыва Уилкинсона), динамика <code>schrodinger(H, psi0, t)</code>, астрономия и геодезия.</span>
+                            <strong style="color: var(--emerald); display: block; margin-bottom: 6px;">🧮 1. Единая строка ввода и Чистый Лист Расчётов (<code>poler_calc</code>)</strong>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Как в обычном калькуляторе или компактном блокноте: вводишь арифметику, уравнения (<code>solve</code>), единицы СИ, физические законы (<code>kepler3</code>, <code>schwarzschild</code>), матрицы (<code>expm</code>, <code>eigen_sturm</code>) или уравнение Шрёдингера — и мгновенно получаешь точный ответ без шума и лишних панелей.</span>
                         </div>
                         <div style="background: #070b14; border: 1px solid var(--border); padding: 16px; border-radius: 10px;">
-                            <strong style="color: var(--cyan); display: block; margin-bottom: 6px;">🌌 2. Квантовый Мост и Верификатор ℤ[1/√2, i] (<code>poler_quantum</code>)</strong>
-                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Симулятор до 26 кубитов (<code>bell</code>, <code>ghz</code>, <code>qft</code>, <code>grover</code>, <code>teleport</code>, <code>qaoa</code>, <code>qcasm</code>), сфера Блоха, шумовые пресеты <code>ibm-heron</code> и <code>google-willow</code>, предел Ландауэра (<code>1.11·10⁻²¹ Дж</code>) и формальный верификатор унитарности/эквивалентности в кольце <code>ℤ[1/√2, i]</code> (<code>proved_exact</code> за 594 мкс).</span>
+                            <strong style="color: var(--cyan); display: block; margin-bottom: 6px;">⚙️ 2. Алгоритм «Мозга» вместо <code>float32</code>-матриц (Скрытый Вычислитель)</strong>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Когда расчёт сложный (гамильтониан <code>256×256</code>, 26 кубитов или молекула), движок незаметно для пользователя заменяет тяжёлые матрицы с плавающей точкой на тритные синапсы (<code>0.2 Б/вес</code>), целочисленные синусы <code>CORDIC</code> и точную алгебру <code>ℤ[1/√2, i]</code> / <code>[N:D]</code> без накопления ошибок округления.</span>
                         </div>
                         <div style="background: #070b14; border: 1px solid var(--border); padding: 16px; border-radius: 10px;">
-                            <strong style="color: var(--purple); display: block; margin-bottom: 6px;">🧬 3. SciVoice: Квантовая Химия RHF/STO-3G и Докинг (<code>poler_scivoice</code>)</strong>
-                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Прямой расчёт Хартри–Фока (<code>mode="hf"</code>, <code>H2O: -74.962928 Ha</code> за 12 итераций SCF), паспорт молекулы из SMILES/имени (SSSR-кольца, заряды Гастайгера, Липински), 3D/4D-визор с кручением σ-связей (<code>--view-mol</code>), био-контур связывания (<code>ΔG</code>, <code>Kd = 3^(-d)</code>, 27-дерево, <code>DE-9IM</code>) и гибкий Induced-Fit докинг (<code>--dock --induced</code>).</span>
+                            <strong style="color: var(--purple); display: block; margin-bottom: 6px;">⚛️ 3. Контекстный карточный ответ (Кванты и Молекулы по запросу)</strong>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Если в калькулятор введена квантовая задача (<code>grover</code>, <code>qft</code>, <code>schrodinger</code>) или формула вещества (<code>H2O</code>, <code>кофеин</code>), прямо в области ответа аккуратно отрисовывается спектр, вердикт точности <code>proved_exact</code>, энергия Хартри–Фока (<code>-74.962928 Ha</code>) или компактный 3D-вид молекулы.</span>
                         </div>
                         <div style="background: #070b14; border: 1px solid var(--border); padding: 16px; border-radius: 10px;">
-                            <strong style="color: var(--amber); display: block; margin-bottom: 6px;">⚡ 4. Внутренний JIT-Компилятор и Мутатор .t5q (<code>poler_jit</code> + <code>--jit-loop</code>)</strong>
-                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Инспектор генерации машинного кода <code>x86_64</code> с весами в потоке инструкций (<code>WeightsInCode</code> на <code>PROT_READ|PROT_EXEC</code> W^X, <code>2.77 мкс/вызов</code>), обратный компилятор <code>--t5q-compile</code> (перезапись тритов in-place на диске за 10 мс без декомпрессии) и <code>CausalLinker</code> для автопочинки стыков графа.</span>
-                        </div>
-                        <div style="background: #070b14; border: 1px solid var(--border); padding: 16px; border-radius: 10px;">
-                            <strong style="color: var(--emerald); display: block; margin-bottom: 6px;">🪰 5. Коннектом Мозга Мухи FLYCSR1 в L3-кэше (10 инструментов <code>poler_fly_*</code>)</strong>
-                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Интерактивный навигатор по 138 639 нейронам и 50 млн синапсов FlyWire v783 (<code>0.2 Б/синапс pack5 = 10 МБ</code>): паспорта нейронов, ротор циркуляции <code>J = A − Aᵀ</code>, кратчайшие маршруты сигнала, треугольные мотивы (feedforward/feedback), PageRank-хабы и живая волна возбуждения в RAM (<code>poler_fly_propagate</code>).</span>
-                        </div>
-                        <div style="background: #070b14; border: 1px solid var(--border); padding: 16px; border-radius: 10px;">
-                            <strong style="color: var(--cyan); display: block; margin-bottom: 6px;">🧠 6. Триединство, Вихрь SSN и Полегон POLER[Ψ] (<code>poler_triune_*</code> / <code>ssn_*</code>)</strong>
-                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Осциллограф живого мозга SSN (активность ~5%, синхронность <code>S</code>, критичность <code>C ≈ 0.55</code>, медиаторы <code>DA/5HT/NE</code>), 12 архетипов литературного поля <code>POLER[Ψ]</code> до сверхпроводимости смысла (<code>H^Ψ = 0</code>), инспектор кристалла <code>.t5c</code> и трейс речи (<code>sem / gate / syn / fly / tau</code>) с моторными интентами <code>S2</code>.</span>
-                        </div>
-                        <div style="background: #070b14; border: 1px solid var(--border); padding: 16px; border-radius: 10px;">
-                            <strong style="color: var(--purple); display: block; margin-bottom: 6px;">🔍 7. Топографический Поиск, Гиппокамп MVR и AIDDE (<code>poler_search</code> / <code>knowledge</code>)</strong>
-                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Резонансный поиск полных логических сцен (режимы <code>hits | field | psi | poler</code>), call-graph анализ влияния символа <code>--impact</code> (AIDDE), база знаний с эпистемическим фильтром <code>MVR ×1.5</code> (проверяемые байтовые цитаты) и офлайн кросс-языковой мост <code>Semantic Bridge (ru↔en)</code>.</span>
-                        </div>
-                        <div style="background: #070b14; border: 1px solid var(--border); padding: 16px; border-radius: 10px;">
-                            <strong style="color: var(--amber); display: block; margin-bottom: 6px;">📦 8. Редактор 100+ ГБ, Корпусной Пакер .poler и Vault .pvt (<code>--edit-serve</code> / <code>--pack</code>)</strong>
-                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Zero-Copy редактор сверхбольших файлов (0.12 мс на 10.5 ГБ), потоковый пакер 150 ГБ корпусов (<code>--corpus-pack</code>, <code>--stream-manifest</code> с чекпоинтами и in-place CoW-патчами <code>--poler-patch</code>), скан архивов без распаковки и шифропоток аудита MCP в <code>.pvt</code> (<code>--vault-log</code>).</span>
+                            <strong style="color: var(--amber); display: block; margin-bottom: 6px;">📜 4. Кнопка «Скрипт .poler» и Резидентный Сервер (<code>--mcp-http</code>)</strong>
+                            <span style="font-size: 0.85rem; color: var(--text-secondary);">Любую цепочку вычислений можно сохранить в короткий текстовый скрипт <code>.poler</code> или вызвать из внешней программы по локальному JSON-RPC серверу — заменяя гигабайты библиотек одним процессом на 20 МБ.</span>
                         </div>
                     </div>
                 </div>
