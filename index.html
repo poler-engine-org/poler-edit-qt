@@ -35,6 +35,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script id="widget-wfp-script" language="javascript" type="text/javascript" src="https://secure.wayforpay.com/server/pay-widget.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #080b10; color: #e2e8f0; }
         .code-font { font-family: 'JetBrains Mono', monospace; }
@@ -276,12 +278,12 @@
                         </p>
                         
                         <div class="rounded-xl bg-black/60 p-4 font-mono text-xs text-slate-300 border border-slate-800 space-y-3">
-                            <div class="text-slate-500"># 1. Завантажте готовий релізний бінарник:</div>
-                            <div class="text-emerald-400">wget https://github.com/poler-engine-org/poler-edit-qt/releases/download/v0.3.0/poler-edit-linux-x86_64.tar.gz</div>
-                            <div class="text-emerald-400">tar -xzf poler-edit-linux-x86_64.tar.gz &amp;&amp; cd poler-edit-linux-x86_64</div>
+                            <div class="text-slate-500"># 1. Запустіть вбудований property-раннер на випадкових тестах:</div>
+                            <div class="text-emerald-400">git clone https://github.com/poler-engine-org/poler-edit-qt.git</div>
+                            <div class="text-emerald-400">cd poler-edit-qt/core && cargo test --release</div>
                             
                             <div class="text-slate-500 pt-2"># 2. Відкрийте ВЛАСНИЙ файл будь-якого розміру (до 10 ГБ):</div>
-                            <div class="text-emerald-300">./poler-edit &lt;ШЛЯХ_ДО_ВАШОГО_ФАЙЛУ&gt;</div>
+                            <div class="text-emerald-300">poler-edit &lt;ШЛЯХ_ДО_ВАШОГО_ФАЙЛУ&gt;</div>
                         </div>
                     </div>
 
@@ -295,13 +297,13 @@
         </div>
     </section>
 
-    <!-- Тарифи та Ліцензування (Комплаєнс LiqPay + LICENSE.md) -->
+    <!-- Тарифи та Ліцензування (Офіційний платіжний сервіс WayForPay + LICENSE.md) -->
     <section id="pricing" class="py-20 bg-dark-card border-t border-dark-border">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center max-w-3xl mx-auto mb-16">
                 <h2 class="text-xs uppercase tracking-widest text-emerald-400 font-mono font-semibold mb-3">Офіційне ліцензування</h2>
                 <p class="text-3xl sm:text-4xl font-extrabold text-white">Прозорі тарифи без прихованих платежів</p>
-                <p class="text-slate-400 text-sm mt-3">Безпечна оплата через шлюз LiqPay від ПриватБанку. Миттєва генерація Ed25519 ключа на ваш E-mail.</p>
+                <p class="text-slate-400 text-sm mt-3">Безпечна оплата через ліцензований платіжний шлюз WayForPay (Visa, Mastercard, Apple Pay, Google Pay). Миттєва генерація Ed25519 ключа на ваш E-mail.</p>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
@@ -462,7 +464,7 @@
                 <div>
                     <h4 class="font-bold text-white text-sm mb-2">💳 Оплата</h4>
                     <p class="leading-relaxed">
-                        Безпечна онлайн-оплата картками будь-якого банку (Visa, Mastercard), Apple Pay та Google Pay через платіжний сервіс LiqPay від АТ КБ "ПриватБанк".
+                        Безпечна онлайн-оплата картками будь-якого банку світу (Visa, Mastercard), Apple Pay та Google Pay через платіжний сервіс WayForPay (ТОВ ФК «ВЕЙ ФОР ПЕЙ», Ліцензія НБУ №21/1064-рк).
                     </p>
                 </div>
                 <div>
@@ -526,25 +528,29 @@
     </footer>
 
     <script>
+        const WFP_MERCHANT_ACCOUNT = 'poler_engine_org_github_io';
+        const WFP_MERCHANT_DOMAIN = 'poler-engine-org.github.io';
+        const WFP_SECRET_KEY = '0bd1c39553ca31cbe8be3e20f759b4cd12886c33';
+
         function handleBuyClick(plan) {
             let email = '';
-            let planName = '';
+            let productName = '';
             let amount = 0;
 
             if (plan === 'monthly') {
                 const el = document.getElementById('monthlyEmail');
                 email = el ? el.value.trim() : '';
-                planName = 'POLER Edit Pro Monthly (300 ₴)';
+                productName = 'POLER Edit Pro Monthly (30 днів)';
                 amount = 300;
             } else if (plan === 'annual') {
                 const el = document.getElementById('annualEmail');
                 email = el ? el.value.trim() : '';
-                planName = 'POLER Edit Pro Annual (3 000 ₴)';
+                productName = 'POLER Edit Pro Annual (365 днів)';
                 amount = 3000;
             } else if (plan === 'lifetime') {
                 email = prompt('Вкажіть ваш E-mail для генерації безстрокового Ed25519 ключа (4 999 ₴):', 'developer@domain.com') || '';
                 email = email.trim();
-                planName = 'POLER Edit Lifetime Enterprise (4 999 ₴)';
+                productName = 'POLER Edit Lifetime Enterprise';
                 amount = 4999;
             }
 
@@ -553,7 +559,54 @@
                 return;
             }
 
-            alert(`Дякуємо! Перенаправлення на захищений платіжний шлюз LiqPay від ПриватБанку для оплати «${planName}» на суму ${amount} ₴.\n\nКлюч ліцензії формату PE1-... буде згенеровано та надіслано на ${email}.`);
+            const orderReference = 'POLER_' + Date.now();
+            const orderDate = Math.floor(Date.now() / 1000);
+            const count = 1;
+            const currency = 'UAH';
+
+            const signStr = [
+                WFP_MERCHANT_ACCOUNT,
+                WFP_MERCHANT_DOMAIN,
+                orderReference,
+                orderDate,
+                amount,
+                currency,
+                productName,
+                count,
+                amount
+            ].join(';');
+
+            const signature = CryptoJS.HmacMD5(signStr, WFP_SECRET_KEY).toString();
+
+            try {
+                const wayforpay = new Wayforpay();
+                wayforpay.run({
+                    merchantAccount: WFP_MERCHANT_ACCOUNT,
+                    merchantDomainName: WFP_MERCHANT_DOMAIN,
+                    authorizationType: 'SimpleSignature',
+                    merchantSignature: signature,
+                    orderReference: orderReference,
+                    orderDate: orderDate,
+                    amount: amount,
+                    currency: currency,
+                    productName: [productName],
+                    productPrice: [amount],
+                    productCount: [count],
+                    clientEmail: email
+                },
+                function (response) {
+                    alert('Оплата успішно здійснена! Ваш ліцензійний ключ Ed25519 формату PE1-... генерується та надсилається на ' + email);
+                },
+                function (response) {
+                    console.log('WayForPay payment declined:', response);
+                },
+                function (response) {
+                    console.log('WayForPay payment pending:', response);
+                });
+            } catch (err) {
+                console.error('WayForPay init error:', err);
+                alert('Помилка відкриття платіжного шлюзу. Спробуйте оновити сторінку або зв’яжіться з підтримкою: vitalijkotok18@gmail.com');
+            }
         }
     </script>
 </body>
