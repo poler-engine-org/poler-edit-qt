@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="uk" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POLER Edit & Reader 2.0 — Суверенний WYSIWYG та Piece-Table редактор без лімітів розміру</title>
+    <meta name="description" content="Суверенний Markdown та текстовий редактор нового покоління: від 10+ ГБ на Zero-Copy Piece-Table до Typora-подібного читача, палітри команд, стікерів та оффлайн AI-ядра.">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        dark: {
+                            bg: '#070a0f',
+                            surface: '#0d131d',
+                            card: '#121927',
+                            border: '#1e293b',
+                            hover: '#1a2436'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'SFMono-Regular', 'Menlo', 'monospace'],
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- WayForPay Payment Gateway -->
+    <script id="widget-wfp-script" language="javascript" type="text/javascript" src="https://secure.wayforpay.com/server/pay-widget.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #070a0f; color: #f1f5f9; }
+        .code-font { font-family: 'JetBrains Mono', monospace; }
+        .glow-emerald { box-shadow: 0 0 50px -10px rgba(16, 185, 129, 0.25); }
+        .glow-emerald-sm { box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.2); }
+        .grid-bg {
+            background-size: 32px 32px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #10b981 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="selection:bg-emerald-500/20 selection:text-emerald-300 min-h-screen flex flex-col">
+
+    <!-- Навігація -->
+    <header class="sticky top-0 z-50 backdrop-blur-md bg-[#070a0f]/90 border-b border-dark-border">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center font-mono font-bold text-emerald-400 text-lg glow-emerald-sm">
+                    Ψ
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-bold text-slate-100 tracking-tight text-lg leading-none flex items-center gap-2">
+                        POLER Edit <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold font-mono">v2.0</span>
+                    </span>
+                    <span class="text-[10px] text-slate-400 font-mono">Reader & Sovereign Core</span>
+                </div>
+            </div>
+
+            <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-300">
+                <a href="#features" class="hover:text-emerald-400 transition-colors">Можливості</a>
+                <a href="#showcase" class="hover:text-emerald-400 transition-colors">Вітрина вікон</a>
+                <a href="#ai-mcp" class="hover:text-emerald-400 transition-colors">AI & MCP</a>
+                <a href="#downloads" class="hover:text-emerald-400 transition-colors">Завантаження</a>
+                <a href="#pricing" class="hover:text-emerald-400 transition-colors">Тарифи</a>
+                <a href="studio.html" class="hover:text-emerald-400 transition-colors">POLER Studio</a>
+                <a href="https://github.com/poler-engine-org/poler-edit-qt" target="_blank" class="hover:text-white transition-colors">GitHub</a>
+            </nav>
+
+            <div class="flex items-center space-x-3">
+                <a href="#downloads" class="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold text-sm transition-all transform active:scale-95 shadow-lg shadow-emerald-500/20 flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <span>Отримати v2.0</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1">
+        <!-- Hero Section -->
+        <section class="relative overflow-hidden pt-20 pb-16 lg:pt-28 lg:pb-24 grid-bg">
+            <div class="pointer-events-none absolute left-1/2 top-0 h-[450px] w-[800px] -translate-x-1/2 rounded-full bg-emerald-500/10 blur-3xl"></div>
+
+            <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+                <div class="text-center lg:text-left">
+                    <div class="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-medium text-emerald-400 mb-6">
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Суверенний текстовий та Markdown-редактор нового покоління
+                    </div>
+
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight text-white mb-6">
+                        Один редактор для <span class="text-gradient">всього вашого</span> тексту
+                    </h1>
+
+                    <p class="text-lg text-slate-300 leading-relaxed max-w-xl mx-auto lg:mx-0 mb-8 font-normal">
+                        Замітки, чернетки, великі романи, код та мегафайли <strong>10+ ГБ</strong> в одному вікні.
+                        Миттєвий Typora-ридер, дерево структури, палітра команд <code class="px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 font-mono text-sm">Ctrl+K</code>, кольорові стікери та нативне Rust-ядро з нульовим споживанням пам'яті.
+                    </p>
+
+                    <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                        <a href="#downloads" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-center transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            Завантажити для Linux / Windows / Android
+                        </a>
+                        <a href="#showcase" class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-dark-card hover:bg-dark-hover border border-dark-border text-slate-200 font-semibold text-center transition-colors">
+                            Огляд вікон та функцій
+                        </a>
+                    </div>
+
+                    <div class="mt-8 flex items-center justify-center lg:justify-start gap-6 text-xs text-slate-400 font-mono">
+                        <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg> Старт за 0.05с</span>
+                        <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg> 100% Оффлайн</span>
+                        <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg> Без ліміту розміру</span>
+                    </div>
+                </div>
+
+                <!-- Live Interactive Editor Mockup -->
+                <div class="relative">
+                    <div class="rounded-2xl border border-dark-border bg-dark-card shadow-2xl overflow-hidden glow-emerald">
+                        <!-- Window Titlebar -->
+                        <div class="bg-[#0b1017] px-4 py-3 border-b border-dark-border flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-3 h-3 rounded-full bg-rose-500/80"></div>
+                                <div class="w-3 h-3 rounded-full bg-amber-500/80"></div>
+                                <div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+                                <span class="ml-2 text-xs font-mono text-slate-400">POLER_OS.md — POLER Edit & Reader 2.0</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[11px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono font-medium">WYSIWYG Читач</span>
+                            </div>
+                        </div>
+
+                        <!-- Editor Canvas Body (Split: Tree + Editor/Reader) -->
+                        <div class="grid grid-cols-12 min-h-[380px] text-xs font-mono">
+                            <!-- Left: Outline / Structure -->
+                            <div class="col-span-4 bg-[#0a0f16] border-r border-dark-border p-3.5 flex flex-col justify-between hidden sm:flex">
+                                <div>
+                                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center justify-between">
+                                        <span>Зміст (Outline)</span>
+                                        <span class="text-emerald-400">H1..H6</span>
+                                    </div>
+                                    <div class="space-y-1.5 text-slate-300">
+                                        <div class="p-1 rounded bg-emerald-500/10 text-emerald-300 font-semibold truncate">▶ # Архітектура POLER[Ψ]</div>
+                                        <div class="pl-3 p-0.5 text-slate-400 truncate">## Zero-Copy Piece-Table</div>
+                                        <div class="pl-3 p-0.5 text-slate-400 truncate">## Резонансний пошук ε</div>
+                                        <div class="pl-3 p-0.5 text-slate-400 truncate">## Typora Reader Core</div>
+                                        <div class="p-1 text-slate-400 truncate">▶ # Контрастні теми</div>
+                                        <div class="p-1 text-slate-400 truncate">▶ # Швидка палітра Ctrl+K</div>
+                                    </div>
+                                </div>
+                                <div class="pt-3 border-t border-dark-border/60">
+                                    <div class="text-[10px] text-slate-400 mb-1">Стікер:</div>
+                                    <div class="p-2 rounded bg-amber-500/10 border border-amber-500/30 text-amber-200 text-[11px] leading-tight">
+                                        📌 <strong>План:</strong> перевірити 5 тем та PDF-експорт.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Live Typing Canvas -->
+                            <div class="col-span-12 sm:col-span-8 p-4 bg-[#0d131d] flex flex-col justify-between">
+                                <div class="space-y-3 font-sans text-sm text-slate-200 leading-relaxed overflow-hidden">
+                                    <div class="text-xl font-bold text-white border-b border-dark-border pb-2 flex items-center justify-between">
+                                        <span># Архітектура POLER[Ψ]</span>
+                                        <span class="text-xs font-mono font-normal text-emerald-400">140 336 слів</span>
+                                    </div>
+                                    <p class="text-slate-300" id="hero-typing-target">
+                                        Від предсказання токенів до <strong>моделювання реальності</strong>. Суверенне ядро обробляє мегафайли будь-якого розміру без споживання ОЗП.
+                                    </p>
+                                    <div class="p-3 rounded-lg bg-[#141b26] border border-dark-border font-mono text-xs text-emerald-300">
+                                        <code>✓ 12 000 000 рядків індексовано за 0.26с (4.3 GiB/s)</code>
+                                    </div>
+                                    <blockquote class="pl-3 border-l-4 border-emerald-500 text-slate-300 italic text-xs">
+                                        «Текст і стан системи — це динамічна система, що прагне до стаціонарності змісту ĤΨ = 0».
+                                    </blockquote>
+                                </div>
+
+                                <!-- Status bar of Mockup -->
+                                <div class="mt-4 pt-2.5 border-t border-dark-border flex items-center justify-between text-[11px] font-mono text-slate-400">
+                                    <span>Ряд 1, Ст 1 &bull; UTF-8 &bull; LF</span>
+                                    <span class="text-emerald-400 font-semibold">Free POLER 🟢</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 12 Features Grid -->
+        <section id="features" class="py-20 bg-dark-surface/50 border-y border-dark-border relative">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">
+                        Все, що потрібно для серйозної роботи з текстом
+                    </h2>
+                    <p class="text-slate-400 text-base">
+                        Без ваги електронів, без хмарних підписок та зависань на великих файлах. Тільки швидкість, комфорт та типографіка.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border hover:border-emerald-500/40 transition-all hover:translate-y-[-2px] group">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">
+                            📖
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Typora-подібний WYSIWYG</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Миттєвий перемикач між живим оглядом тексту та чистим кодом через <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 font-mono text-xs">Ctrl+/</kbd>.
+                        </p>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border hover:border-emerald-500/40 transition-all hover:translate-y-[-2px] group">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">
+                            ⚡
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Палітра команд (Ctrl+K)</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Єдина точка входу до всіх дій, тем, форматів, експорту та навігації по файлах прямо з клавіатури, як у VS Code та Obsidian.
+                        </p>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border hover:border-emerald-500/40 transition-all hover:translate-y-[-2px] group">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">
+                            📑
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Ієрархічний зміст (Outline)</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Автоматичне парсинг H1..H6 з інтерактивним згортанням, швидким фільтром та синхронним скролом як у ридері, так і в коді.
+                        </p>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border hover:border-emerald-500/40 transition-all hover:translate-y-[-2px] group">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">
+                            🎨
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">5 Контрастних тем</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Откалібрований контраст 14:1 для <strong>GitHub Light</strong>, <strong>Newsprint (газетна сепія)</strong>, <strong>Whitey</strong>, <strong>Night (OLED)</strong> та <strong>Breeze Dark</strong>.
+                        </p>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border hover:border-emerald-500/40 transition-all hover:translate-y-[-2px] group">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">
+                            📌
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Кольорові стікери та замітки</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Бічна панель із 4 відтінками (янтар, смарагд, роза, графіт). Швидке прикріплення думок до розділів та вставка в текст у два кліки.
+                        </p>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border hover:border-emerald-500/40 transition-all hover:translate-y-[-2px] group">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">
+                            🧘
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Дзен-режим фокусу</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Приховує меню, панелі та статус-бар по <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 font-mono text-xs">Ctrl+Alt+Z</kbd>. Залишається лише аркуш тексту; вихід за допомогою <kbd class="px-1 py-0.5 rounded bg-slate-800 text-xs font-mono">Esc</kbd>.
+                        </p>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border hover:border-emerald-500/40 transition-all hover:translate-y-[-2px] group">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">
+                            💾
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Zero-Copy Piece-Table (10+ ГБ)</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Файли розміром 1 ГБ відкриваються за 0.26с. Пам'ять O(1) &le; 48 МБ завдяки суверенному Rust-ядру на mmap.
+                        </p>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border hover:border-emerald-500/40 transition-all hover:translate-y-[-2px] group">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">
+                            📤
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Повний пакет експорту</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Генерація векторних PDF із пагінацією, стилізованого або чистого HTML, знімків сторінок у PNG, Word (.docx), ODT, RTF та LaTeX.
+                        </p>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border hover:border-emerald-500/40 transition-all hover:translate-y-[-2px] group">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">
+                            ⌨
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Вбудований термінал (F4)</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Вбудований термінал із підтримкою <code class="text-emerald-400 font-mono">poler-sh</code>, bash та PowerShell. Відправка виділеного коду прямо в шелл.
+                        </p>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border hover:border-emerald-500/40 transition-all hover:translate-y-[-2px] group">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">
+                            🔍
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">ε-Резонансний пошук v2</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Потоковий пошук без блокування інтерфейсу, підсвічування бурштиновими маркерами та циклічна навігація за Enter.
+                        </p>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border hover:border-emerald-500/40 transition-all hover:translate-y-[-2px] group">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">
+                            📊
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Статистика читання</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Підрахунок слів, символів, рядків, абзаців та розрахунковий час читання вголос / очима прямо в статус-барі.
+                        </p>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border hover:border-emerald-500/40 transition-all hover:translate-y-[-2px] group">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">
+                            📱
+                        </div>
+                        <h3 class="text-lg font-bold text-white mb-2">Linux &bull; Windows &bull; Android</h3>
+                        <p class="text-sm text-slate-400 leading-relaxed">
+                            Один код ядра на C++17 та Rust. Статичний CRT для чистої Windows без vcredist, нативний APK без віртуальної Java-машини.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive 10-Window Showcase -->
+        <section id="showcase" class="py-20 bg-dark-bg relative">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto mb-12">
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">
+                        Інтерактивна вітрина вікон та панелей
+                    </h2>
+                    <p class="text-slate-400 text-base">
+                        Оберіть модуль, щоб побачити як він організований у додатку:
+                    </p>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-center gap-2 mb-8" id="showcase-tabs">
+                    <button onclick="selectWindow('reader')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-500 text-slate-950 transition-all">📖 Читач (WYSIWYG)</button>
+                    <button onclick="selectWindow('palette')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-dark-card text-slate-300 hover:text-white border border-dark-border transition-all">⚡ Палітра Ctrl+K</button>
+                    <button onclick="selectWindow('notes')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-dark-card text-slate-300 hover:text-white border border-dark-border transition-all">📌 Стікери</button>
+                    <button onclick="selectWindow('outline')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-dark-card text-slate-300 hover:text-white border border-dark-border transition-all">📑 Зміст (TOC)</button>
+                    <button onclick="selectWindow('code')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-dark-card text-slate-300 hover:text-white border border-dark-border transition-all">💻 Режим коду</button>
+                    <button onclick="selectWindow('zen')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-dark-card text-slate-300 hover:text-white border border-dark-border transition-all">🧘 Дзен-режим</button>
+                    <button onclick="selectWindow('terminal')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-dark-card text-slate-300 hover:text-white border border-dark-border transition-all">⌨ Термінал F4</button>
+                    <button onclick="selectWindow('files')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-dark-card text-slate-300 hover:text-white border border-dark-border transition-all">🗂 Файли проєкту</button>
+                    <button onclick="selectWindow('search')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-dark-card text-slate-300 hover:text-white border border-dark-border transition-all">🔍 Пошук v2</button>
+                    <button onclick="selectWindow('themes')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-dark-card text-slate-300 hover:text-white border border-dark-border transition-all">🎨 5 Тем</button>
+                </div>
+
+                <div class="rounded-2xl border border-dark-border bg-dark-card p-6 lg:p-8 max-w-4xl mx-auto shadow-2xl" id="showcase-content">
+                    <div class="flex items-center justify-between border-b border-dark-border pb-4 mb-6">
+                        <div>
+                            <h3 class="text-xl font-bold text-white flex items-center gap-2" id="sc-title">
+                                <span>📖 Typora-подібний режим читача</span>
+                            </h3>
+                            <p class="text-sm text-slate-400 mt-1" id="sc-desc">
+                                Багатий рендер форматування Markdown (GFM) у реальному часі: жирний шрифт, таблиці, блоки коду з копіюванням, математичні формули KaTeX та чекбокси.
+                            </p>
+                        </div>
+                        <span class="text-xs font-mono px-3 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 whitespace-nowrap" id="sc-shortcut">
+                            Ctrl + /
+                        </span>
+                    </div>
+
+                    <div class="rounded-xl bg-[#090d14] border border-dark-border p-5 font-mono text-xs text-slate-300 space-y-3" id="sc-demo">
+                        <div class="text-emerald-400 font-semibold text-sm"># Заголовок документа першого рівня</div>
+                        <p class="font-sans text-sm text-slate-300 leading-relaxed">
+                            Текст автоматично вирівнюється за типографічною сіткою, посилання підсвічуються фірмовим синім, а таблиці отримують контрастні межі.
+                        </p>
+                        <div class="p-3 rounded bg-[#101724] border border-dark-border flex items-center justify-between text-slate-400">
+                            <span>- [x] Автоматичний рендер GitHub Markdown</span>
+                            <span class="text-emerald-400">✓ Завершено</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI & MCP Architecture Section -->
+        <section id="ai-mcp" class="py-20 bg-dark-surface/50 border-t border-dark-border relative">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <div class="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-medium text-emerald-400 mb-6">
+                            Model Context Protocol &bull; Резонанс
+                        </div>
+                        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-6">
+                            AI-Асистент та MCP безпосередньо в редакторі
+                        </h2>
+                        <p class="text-slate-300 text-base leading-relaxed mb-6 font-normal">
+                            POLER Edit спроєктований для прямого зв'язку з суверенним рушієм <code class="text-emerald-400 font-mono">poler-engine</code>. Через вбудований термінал F4 та LSP/MCP протокол ви можете віддавати контекст документа локальним або серверним LLM.
+                        </p>
+                        <ul class="space-y-3 text-sm text-slate-300">
+                            <li class="flex items-start gap-2.5">
+                                <span class="text-emerald-400 font-bold">✓</span>
+                                <span><strong>ε-Скролінг:</strong> пошук контексту за значенням та семантичною енергією.</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="text-emerald-400 font-bold">✓</span>
+                                <span><strong>Команди в терміналі:</strong> <code class="text-emerald-400 font-mono">/stats</code>, <code class="text-emerald-400 font-mono">/export</code>, <code class="text-emerald-400 font-mono">/ai rewrite</code>.</span>
+                            </li>
+                            <li class="flex items-start gap-2.5">
+                                <span class="text-emerald-400 font-bold">✓</span>
+                                <span><strong>Ніяких витоків:</strong> текст обробляється локально на вашому комп'ютері.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="rounded-2xl border border-dark-border bg-dark-card p-6 shadow-xl font-mono text-xs">
+                        <div class="text-slate-400 pb-3 mb-3 border-b border-dark-border flex items-center justify-between">
+                            <span>Термінал F4 — POLER Shell &bull; MCP Gateway</span>
+                            <span class="text-emerald-400">online</span>
+                        </div>
+                        <div class="space-y-2 text-slate-300">
+                            <div><span class="text-emerald-400">vitalij@poler:~$</span> poler-engine --resonance-mode psi POLER_OS.md</div>
+                            <div class="text-slate-400">[info] Piece-Table mmap initialized. 12,000,000 lines ready in 0.26s.</div>
+                            <div><span class="text-emerald-400">vitalij@poler:~$</span> /ai підсумуй ключові інваріанти за розділом 2</div>
+                            <div class="p-3 rounded bg-dark-bg border border-emerald-500/30 text-emerald-300 leading-relaxed font-sans text-xs">
+                                <strong>Відповідь MCP-агента:</strong><br/>
+                                1. Рівняння оновлення латентного стану через проектор П_Λ.<br/>
+                                2. Повна відсутність галюцинацій завдяки проекції у причинний базис.<br/>
+                                3. Золотий вузол повноліття: 14 циклів &times; 9/7 = 18 років.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Download Section -->
+        <section id="downloads" class="py-20 bg-dark-bg border-t border-dark-border relative">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto mb-14">
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">
+                        Завантажити POLER Edit v2.0
+                    </h2>
+                    <p class="text-slate-400 text-base">
+                        Оберіть вашу платформу. Всі збірки містять статичне ядро і готові до запуску без встановлення важких залежностей.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                    <!-- Linux -->
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border hover:border-emerald-500/40 transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-2xl">🐧</span>
+                                <span class="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">x86_64</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-2">Linux x86_64</h3>
+                            <p class="text-xs text-slate-400 mb-6 leading-relaxed">
+                                Чистий двійковий файл (579 КБ). Працює в Wayland та X11 на Ubuntu, Arch, CachyOS, Debian, Fedora.
+                            </p>
+                        </div>
+                        <a href="https://github.com/poler-engine-org/poler-edit-qt/releases" target="_blank" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-center text-sm transition-all shadow-md">
+                            Завантажити для Linux
+                        </a>
+                    </div>
+
+                    <!-- Windows -->
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border hover:border-emerald-500/40 transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-2xl">🪟</span>
+                                <span class="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">MSVC /MT</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-2">Windows x64</h3>
+                            <p class="text-xs text-slate-400 mb-6 leading-relaxed">
+                                Статичний CRT. Запускається на чистій Windows 10/11 без потреби встановлювати VC++ Redistributable.
+                            </p>
+                        </div>
+                        <a href="https://github.com/poler-engine-org/poler-edit-qt/releases" target="_blank" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-center text-sm transition-all shadow-md">
+                            Завантажити для Windows
+                        </a>
+                    </div>
+
+                    <!-- Android -->
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border hover:border-emerald-500/40 transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-2xl">🤖</span>
+                                <span class="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">ARM64</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-2">Android (Планшет / Телефон)</h3>
+                            <p class="text-xs text-slate-400 mb-6 leading-relaxed">
+                                Нативний APK із вбудованим aarch64 ядром без JVM. Ідеально підходить для планшетів зі стилусом.
+                            </p>
+                        </div>
+                        <a href="https://github.com/poler-engine-org/poler-edit-qt/releases" target="_blank" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-center text-sm transition-all shadow-md">
+                            Завантажити APK
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing & WayForPay Live Compliance -->
+        <section id="pricing" class="py-20 bg-dark-surface/50 border-t border-dark-border relative">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto mb-14">
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">
+                        Офіційне ліцензування
+                    </h2>
+                    <p class="text-slate-400 text-sm mt-3">
+                        Безпечна оплата через ліцензований платіжний шлюз WayForPay (Visa, Mastercard, Apple Pay, Google Pay). Миттєва генерація Ed25519 ключа на ваш E-mail.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-6xl mx-auto">
+                    <!-- Trial -->
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border flex flex-col justify-between">
+                        <div>
+                            <div class="text-xs font-mono text-emerald-400 uppercase tracking-wider mb-2">Пробний період</div>
+                            <div class="text-2xl font-extrabold text-white mb-1">0 ₴</div>
+                            <div class="text-xs text-slate-400 mb-6">15 днів повного доступу</div>
+                            <ul class="space-y-2 text-xs text-slate-300">
+                                <li>✓ Всі можливості редактора</li>
+                                <li>✓ Без обмеження розміру файлів</li>
+                                <li>✓ 5 тем оформлення</li>
+                            </ul>
+                        </div>
+                        <a href="#downloads" class="mt-6 w-full py-2.5 rounded-xl bg-dark-hover border border-dark-border text-center text-xs font-semibold text-slate-200 hover:text-white">Почати тріал</a>
+                    </div>
+
+                    <!-- Monthly -->
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border flex flex-col justify-between">
+                        <div>
+                            <div class="text-xs font-mono text-emerald-400 uppercase tracking-wider mb-2">Місячна</div>
+                            <div class="text-2xl font-extrabold text-white mb-1">300 ₴ <span class="text-xs font-normal text-slate-400">/ міс</span></div>
+                            <div class="text-xs text-slate-400 mb-4">Підписка для проєктів</div>
+                            <input type="email" id="monthlyEmail" placeholder="Ваш email" class="w-full px-3 py-2 text-xs rounded-lg bg-dark-bg border border-dark-border text-slate-200 focus:outline-none focus:border-emerald-500 mb-2" />
+                            <ul class="space-y-2 text-xs text-slate-300">
+                                <li>✓ Повна Pro-ліцензія</li>
+                                <li>✓ Всі майбутні оновлення v2.x</li>
+                                <li>✓ Пріоритетна підтримка</li>
+                            </ul>
+                        </div>
+                        <button onclick="handleBuyClick('monthly')" class="mt-6 w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-center text-xs font-bold text-slate-950 transition-colors">Оформити за 300 ₴</button>
+                    </div>
+
+                    <!-- Annual -->
+                    <div class="p-6 rounded-2xl bg-dark-card border border-emerald-500/40 relative flex flex-col justify-between glow-emerald-sm">
+                        <span class="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-bold uppercase">Популярний</span>
+                        <div>
+                            <div class="text-xs font-mono text-emerald-400 uppercase tracking-wider mb-2">Річна</div>
+                            <div class="text-2xl font-extrabold text-white mb-1">3 000 ₴ <span class="text-xs font-normal text-slate-400">/ рік</span></div>
+                            <div class="text-xs text-slate-400 mb-4">Економія 2 місяців</div>
+                            <input type="email" id="annualEmail" placeholder="Ваш email" class="w-full px-3 py-2 text-xs rounded-lg bg-dark-bg border border-dark-border text-slate-200 focus:outline-none focus:border-emerald-500 mb-2" />
+                            <ul class="space-y-2 text-xs text-slate-300">
+                                <li>✓ Pro-ліцензія на 1 рік</li>
+                                <li>✓ Ранній доступ до нових модулів</li>
+                                <li>✓ Безлімітний термінал та MCP</li>
+                            </ul>
+                        </div>
+                        <button onclick="handleBuyClick('annual')" class="mt-6 w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-center text-xs font-bold text-slate-950 transition-colors">Оформити за 3 000 ₴</button>
+                    </div>
+
+                    <!-- Lifetime -->
+                    <div class="p-6 rounded-2xl bg-dark-card border border-dark-border flex flex-col justify-between">
+                        <div>
+                            <div class="text-xs font-mono text-emerald-400 uppercase tracking-wider mb-2">Довічна (Lifetime)</div>
+                            <div class="text-2xl font-extrabold text-white mb-1">4 999 ₴</div>
+                            <div class="text-xs text-slate-400 mb-6">Один платіж назавжди</div>
+                            <ul class="space-y-2 text-xs text-slate-300">
+                                <li>✓ Довічні оновлення ядра</li>
+                                <li>✓ Особистий Ed25519 ключ</li>
+                                <li>✓ Усі десктопні та мобільні версії</li>
+                            </ul>
+                        </div>
+                        <button onclick="handleBuyClick('lifetime')" class="mt-6 w-full py-2.5 rounded-xl bg-dark-hover border border-dark-border text-center text-xs font-semibold text-slate-200 hover:text-white transition-colors">Купити за 4 999 ₴</button>
+                    </div>
+                </div>
+
+                <div class="mt-12 p-6 rounded-2xl bg-[#0a0f16] border border-dark-border grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-400 max-w-5xl mx-auto">
+                    <div>
+                        <h4 class="font-bold text-white text-sm mb-2">💳 Оплата</h4>
+                        <p class="leading-relaxed">
+                            Безпечна онлайн-оплата картками будь-якого банку світу (Visa, Mastercard), Apple Pay та Google Pay через платіжний сервіс WayForPay (ТОВ ФК «ВЕЙ ФОР ПЕЙ», Ліцензія НБУ №21/1064-рк).
+                        </p>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-white text-sm mb-2">⚡ Цифрова доставка</h4>
+                        <p class="leading-relaxed">
+                            Електронний ключ активації (Ed25519) надсилається автоматично на вказаний E-mail протягом 1-5 хвилин після підтвердження транзакції.
+                        </p>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-white text-sm mb-2">🛡 Гарантія повернення</h4>
+                        <p class="leading-relaxed">
+                            Відповідно до ст. 9 ЗУ «Про захист прав споживачів», ви маєте право на повернення коштів протягом 14 днів, якщо ліцензійний ключ ще не був активований у додатку.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark-bg border-t border-dark-border py-12 text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center space-x-3">
+                <div class="w-7 h-7 rounded bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center font-mono font-bold text-emerald-400 text-sm">Ψ</div>
+                <span>&copy; 2026 POLER Systems. ФОП Коток В. В. Всі права захищено.</span>
+            </div>
+            <div class="flex items-center space-x-6">
+                <a href="oferta.html" class="hover:text-emerald-400 transition-colors">Публічна оферта</a>
+                <a href="studio.html" class="hover:text-emerald-400 transition-colors">POLER Studio</a>
+                <a href="https://github.com/poler-engine-org/poler-edit-qt/blob/main/LICENSE.md" target="_blank" class="hover:text-emerald-400 transition-colors">Ліцензія</a>
+                <a href="https://github.com/poler-engine-org/poler-edit-qt" target="_blank" class="hover:text-emerald-400 transition-colors">GitHub</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Interactive JS for Showcase and Typing and WayForPay -->
+    <script>
+        const WINDOW_DATA = {
+            reader: {
+                title: "📖 Typora-подібний режим читача (WYSIWYG)",
+                desc: "Миттєве перетворення вихідного коду Markdown у гарно зверстаний документ із пропорційними шрифтами, таблицями, чекбоксами та кодом.",
+                shortcut: "Ctrl + /",
+                demo: `<div class="text-emerald-400 font-semibold text-sm"># Заголовок документа першого рівня</div><p class="font-sans text-sm text-slate-300 leading-relaxed">Текст автоматично вирівнюється за типографічною сіткою, посилання підсвічуються фірмовим синім, а таблиці отримують контрастні межі.</p><div class="p-3 rounded bg-[#101724] border border-dark-border flex items-center justify-between text-slate-400"><span>- [x] Автоматичний рендер GitHub Markdown</span><span class="text-emerald-400">✓ Завершено</span></div>`
+            },
+            palette: {
+                title: "⚡ Швидка палітра команд (Command Palette)",
+                desc: "Єдине вікно швидкого пошуку і запуску будь-яких дій редактора. Клавіатура замінює мишу на 100%.",
+                shortcut: "Ctrl + K",
+                demo: `<div class="p-2 rounded bg-slate-900 border border-emerald-500/40 text-emerald-400">[Вигляд] Режим читача / WYSIWYG &bull; Ctrl+Shift+R</div><div class="p-2 text-slate-400">[Файл] Експорт у PDF &bull; Ctrl+P</div><div class="p-2 text-slate-400">[Теми] GitHub Light (Світла)</div><div class="p-2 text-slate-400">[Абзац] Вставити таблицю &bull; Ctrl+T</div>`
+            },
+            notes: {
+                title: "📌 Кольорові стікери та швидкі замітки",
+                desc: "4 відтінки стікерів (янтар, смарагд, роза, графіт). Тримайте сюжетні лінії, формули та ідеї поруч із документом.",
+                shortcut: "Alt + N",
+                demo: `<div class="p-3 rounded bg-amber-500/10 border border-amber-500/40 text-amber-200">📌 <strong>[26.10 00:45]</strong> Перевірити формулу вільної енергії F = ||g(p) - Ω(o)||²</div><div class="p-3 rounded bg-emerald-500/10 border border-emerald-500/40 text-emerald-200">📌 <strong>[26.10 00:46]</strong> Збірка ядра завершена без помилок.</div>`
+            },
+            outline: {
+                title: "📑 Ієрархічне дерево структури (Outline TOC)",
+                desc: "Аналізує заголовки H1..H6 у фоновому потоці. Дозволяє миттєво стрибати між розділами багатосторінкових книг.",
+                shortcut: "Ctrl + Shift + 1",
+                demo: `<div class="text-slate-300">▼ # Том 1. Протокол агента</div><div class="pl-4 text-slate-400">• ## Швидкість реактора 1.4 ТГц</div><div class="pl-4 text-slate-400">• ## Статус ювеніла (14 циклів)</div><div class="text-slate-300">▶ # Том 2. Сміттяр з Аурелії</div>`
+            },
+            code: {
+                title: "💻 Суверенний режим вихідного коду",
+                desc: "Пряма робота з Piece-Table буфером. Підсвічування номерів рядків, відступи табуляції, віртуальний скролінг для гігабайтних файлів.",
+                shortcut: "Ctrl + /",
+                demo: `<div class="font-mono text-xs text-slate-400">1 | #!/usr/bin/env python3</div><div class="font-mono text-xs text-emerald-400">2 | def solve_hamiltonian(psi):</div><div class="font-mono text-xs text-slate-400">3 |     return H @ psi == 0</div>`
+            },
+            zen: {
+                title: "🧘 Дзен-режим (Без відволікань)",
+                desc: "Повний екран без тулбарів, рамок і системного шуму. Залишається тільки ваш текст і курсор.",
+                shortcut: "Ctrl + Alt + Z / Esc",
+                demo: `<div class="text-center py-6 text-slate-400 font-sans italic text-sm">«Чистий простір для думки. Натисніть Esc для повернення панелей».</div>`
+            },
+            terminal: {
+                title: "⌨ Вбудований термінал розробника",
+                desc: "Пряме з'єднання з poler-sh, bash або PowerShell. Передавайте виділений фрагмент тексту в термінал в один клік.",
+                shortcut: "F4",
+                demo: `<div class="text-slate-400">vitalij@poler:~/project$ cargo build --release</div><div class="text-emerald-400">    Finished release [optimized] in 8.2s</div>`
+            },
+            files: {
+                title: "🗂 Дерево файлів проєкту",
+                desc: "Файловий менеджер без навантаження на систему. Контекстне меню: створення, перейменування, відкриття у терміналі.",
+                shortcut: "F9",
+                demo: `<div class="text-slate-300">📁 src/ &bull; EditorView.cpp, MainWindow.cpp</div><div class="text-slate-300">📁 core/ &bull; Cargo.toml, protocol.rs</div><div class="text-slate-300">📄 POLER_OS.md (1.47 MB)</div>`
+            },
+            search: {
+                title: "🔍 Живий ε-пошук у документі",
+                desc: "Пошук збігів без пауз та підвисань. Індикатор кількості знахідок, врахування регістру (Aa) та плавний перехід.",
+                shortcut: "Ctrl + F",
+                demo: `<div class="p-2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">Знайдено: 42 збіги (1/42) &bull; [Aa] Активно</div>`
+            },
+            themes: {
+                title: "🎨 5 Висококонтрастних тем Typora",
+                desc: "Відкалібровані кольори: GitHub Light, Newsprint (тепла сепія), Whitey, Night (OLED) та Breeze Dark.",
+                shortcut: "Меню -> Теми",
+                demo: `<div class="flex gap-2"><span class="px-2 py-1 rounded bg-white text-black font-sans font-bold">GitHub Light</span><span class="px-2 py-1 rounded bg-[#fbf5e8] text-[#221d17] font-serif font-bold">Newsprint</span><span class="px-2 py-1 rounded bg-[#090d16] text-[#58a6ff] font-sans font-bold">Night OLED</span><span class="px-2 py-1 rounded bg-[#232629] text-[#eff0f1] font-sans font-bold">Breeze Dark</span></div>`
+            }
+        };
+
+        function selectWindow(key) {
+            const data = WINDOW_DATA[key];
+            if (!data) return;
+
+            document.getElementById('sc-title').innerHTML = data.title;
+            document.getElementById('sc-desc').innerText = data.desc;
+            document.getElementById('sc-shortcut').innerText = data.shortcut;
+            document.getElementById('sc-demo').innerHTML = data.demo;
+
+            const btns = document.querySelectorAll('#showcase-tabs .tab-btn');
+            btns.forEach(btn => {
+                if (btn.getAttribute('onclick').includes(key)) {
+                    btn.className = "tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-500 text-slate-950 transition-all";
+                } else {
+                    btn.className = "tab-btn px-4 py-2 rounded-xl text-xs font-semibold bg-dark-card text-slate-300 hover:text-white border border-dark-border transition-all";
+                }
+            });
+        }
+
+        // WayForPay Payment Logic
+        const WFP_MERCHANT_ACCOUNT = 'poler_engine_org_github_io';
+        const WFP_MERCHANT_DOMAIN = 'poler-engine-org.github.io';
+        const WFP_SECRET_KEY = '0bd1c39553ca31cbe8be3e20f759b4cd12886c33';
+
+        function handleBuyClick(plan) {
+            let email = '';
+            let productName = '';
+            let amount = 0;
+
+            if (plan === 'monthly') {
+                const el = document.getElementById('monthlyEmail');
+                email = el ? el.value.trim() : '';
+                productName = 'POLER Edit Pro Monthly (30 днів)';
+                amount = 300;
+            } else if (plan === 'annual') {
+                const el = document.getElementById('annualEmail');
+                email = el ? el.value.trim() : '';
+                productName = 'POLER Edit Pro Annual (365 днів)';
+                amount = 3000;
+            } else if (plan === 'lifetime') {
+                email = prompt('Вкажіть ваш E-mail для генерації безстрокового Ed25519 ключа (4 999 ₴):', 'developer@domain.com') || '';
+                email = email.trim();
+                productName = 'POLER Edit Lifetime Enterprise';
+                amount = 4999;
+            }
+
+            if (!email || !email.includes('@')) {
+                alert('Будь ласка, вкажіть коректний E-mail для отримання криптографічного ключа Ed25519.');
+                return;
+            }
+
+            const orderReference = 'POLER_' + Date.now();
+            const orderDate = Math.floor(Date.now() / 1000);
+            const count = 1;
+            const currency = 'UAH';
+
+            const signStr = [
+                WFP_MERCHANT_ACCOUNT,
+                WFP_MERCHANT_DOMAIN,
+                orderReference,
+                orderDate,
+                amount,
+                currency,
+                productName,
+                count,
+                amount
+            ].join(';');
+
+            const signature = CryptoJS.HmacMD5(signStr, WFP_SECRET_KEY).toString();
+
+            try {
+                const wayforpay = new Wayforpay();
+                wayforpay.run({
+                    merchantAccount: WFP_MERCHANT_ACCOUNT,
+                    merchantDomainName: WFP_MERCHANT_DOMAIN,
+                    authorizationType: 'SimpleSignature',
+                    merchantSignature: signature,
+                    orderReference: orderReference,
+                    orderDate: orderDate,
+                    amount: amount,
+                    currency: currency,
+                    productName: [productName],
+                    productPrice: [amount],
+                    productCount: [count],
+                    clientEmail: email
+                },
+                function (response) {
+                    alert('Оплата успішно здійснена! Ваш ліцензійний ключ Ed25519 формату PE1-... генерується та надсилається на ' + email);
+                },
+                function (response) {
+                    console.log('WayForPay payment declined:', response);
+                },
+                function (response) {
+                    console.log('WayForPay payment pending:', response);
+                });
+            } catch (err) {
+                console.error('WayForPay init error:', err);
+                alert('Помилка відкриття платіжного шлюзу. Спробуйте оновити сторінку або зв’яжіться з підтримкою: vitalijkotok18@gmail.com');
+            }
+        }
+    </script>
+</body>
+</html>
