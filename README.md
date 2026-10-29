@@ -1,13 +1,14 @@
 # POLER Edit — Суверенний Текстовий Редактор & Trit-Silicon AI-IDE
 
-Офіційний репозиторій дистрибуції та документації комерційного програмного забезпечення **POLER Edit v0.4.0**.
+Офіційний репозиторій дистрибуції та документації комерційного програмного забезпечення **POLER Edit v0.4.1**.
 
-**POLER Edit** — високопродуктивний текстовий редактор та AI-IDE нового покоління з Kate-подібним інтерфейсом (Qt6 Widgets) поверх автономного суверенного ядра **`poler-edit-core`** на Rust (Zero-Copy Piece-Table поверх `mmap` та апаратного шару Trit-Silicon).
+**POLER Edit** — високопродуктивний текстовий редактор та AI-IDE нового покоління з Kate-подібним інтерфейсом (Qt6 Widgets) поверх автономного суверенного ядра **`poler-edit-core`** на Rust (Zero-Copy Piece-Table поверх `mmap`, науковий обчислювальний модуль та апаратний шар Trit-Silicon).
 
 - **Швидкість:** відкриває файли 1–10 ГБ (20+ млн рядків) за ~0.05 с.
 - **Мінімальне споживання RAM:** фіксовано 20–40 МБ оперативної пам'яті незалежно від обсягу файлу.
+- **Суверенний «Калькулятор Всього»:** вбудований науковий рушій обчислень (астродинаміка Schlyter/NOAA, константи СІ-2019, СЛАУ, матричні експоненти Паде, поліноми Дюрана–Кернера, LogProb, квантово-хімічні формули та стехіометрія) з підтримкою CLI (`--calc`, `=`) та JSON-RPC.
 - **Trit-Silicon Hardware Substrate:** трійкові операції `𝕋={-1, 0, +1}` без FPU, проективна щільність `[N:D]` в $\mathbb{R}P^1$, упакування 5 тритів/байт (`pack5`).
-- **AI-Native MCP Server:** вбудований протокол Model Context Protocol (`poler-edit-core --mcp`) із 15 інструментами для Claude Code, Cursor, Antigravity та автономних агентів.
+- **AI-Native MCP Server:** вбудований протокол Model Context Protocol (`poler-edit-core --mcp`) із 16 інструментами (включаючи `poler_calc`) для Claude Code, Cursor, Antigravity та автономних агентів.
 - **Live AI-Bridge:** локальний двонаправлений міст між GUI та зовнішніми процесами; автоматична трансляція правок без перевідкриття файлів.
 - **Троїчний баланс дужок $\mathbb{T}=0$:** миттєва верифікація збалансованості дужок та автоматичний захисний відкат некоректних змін коду.
 - **Універсальний Outline & CSR Граф:** динамічний витяг функцій, структур, класів та заголовків H1..H6; граф викликів на базі CSR із витратою всього 0.2 Б/зв'язок.
@@ -16,12 +17,12 @@
 
 ---
 
-## 🚀 Завантаження та Встановлення (Готові Релізи v0.4.0)
+## 🚀 Завантаження та Встановлення (Готові Релізи v0.4.1)
 
-Офіційні готові до роботи бінарні збірки публікуються у розділі [**Releases**](https://github.com/poler-engine-org/poler-edit-qt/releases/tag/v0.4.0):
+Офіційні готові до роботи бінарні збірки публікуються у розділі [**Releases**](https://github.com/poler-engine-org/poler-edit-qt/releases/tag/v0.4.1):
 
 ### 🐧 Linux (x86_64)
-- **Завантажити:** [`poler-edit-linux-x86_64.tar.gz`](https://github.com/poler-engine-org/poler-edit-qt/releases/download/v0.4.0/poler-edit-linux-x86_64.tar.gz)
+- **Завантажити:** [`poler-edit-linux-x86_64.tar.gz`](https://github.com/poler-engine-org/poler-edit-qt/releases/download/v0.4.1/poler-edit-linux-x86_64.tar.gz)
 - **Запуск:**
   ```bash
   tar -xzf poler-edit-linux-x86_64.tar.gz
@@ -30,8 +31,8 @@
   ```
 
 ### 🪟 Windows (x86_64)
-- **Автоустановник (GUI Setup в 1 клік, рекомендовано):** [`POLER-Edit-Setup-x64.exe`](https://github.com/poler-engine-org/poler-edit-qt/releases/download/v0.4.0/POLER-Edit-Setup-x64.exe)
-- **Портативний архів (без встановлення):** [`poler-edit-windows-x86_64.zip`](https://github.com/poler-engine-org/poler-edit-qt/releases/download/v0.4.0/poler-edit-windows-x86_64.zip)
+- **Автоустановник (GUI Setup в 1 клік, рекомендовано):** [`POLER-Edit-Setup-x64.exe`](https://github.com/poler-engine-org/poler-edit-qt/releases/download/v0.4.1/POLER-Edit-Setup-x64.exe)
+- **Портативний архів (без встановлення):** [`poler-edit-windows-x86_64.zip`](https://github.com/poler-engine-org/poler-edit-qt/releases/download/v0.4.1/poler-edit-windows-x86_64.zip)
 - *Усі системні бібліотеки Qt6 та MSVC CRT (`vcruntime140*.dll`, `msvcp140*.dll`) вже вбудовані в пакет — редактор запускається одразу без чорного вікна консолі та без потреби окремо встановлювати `vc_redist.x64.exe`.*
 
 ---
@@ -54,7 +55,10 @@
 Або запустіть у терміналі редактора (клавіша `F4`):
 ```bash
 poler-edit-core --silicon-info
-poler-edit-core --exec '{"id":1,"cmd":"outline","path":"src/main.rs"}'
+poler-edit-core --calc "0.5 A * 220 ohm"
+poler-edit-core = "solve x^2 - 4 = 0"
+poler-edit-core --exec '{"id":1,"cmd":"calc","expr":"moon_illum(2024,4,8,18.35)"}'
+poler-edit-core --exec '{"id":2,"cmd":"outline","path":"src/main.rs"}'
 ```
 
 ---
